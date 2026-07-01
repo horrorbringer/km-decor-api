@@ -20,6 +20,10 @@ class BrandResource extends JsonResource
             'country_of_origin' => $this->country_of_origin,
             'is_featured' => $this->is_featured,
             'product_count' => $this->whenCounted('products'),
+            'meta_title' => $this->meta_title,
+            'meta_description' => $this->meta_description,
+            'og_image' => $this->og_image ? asset("storage/{$this->og_image}") : null,
+            'structured_data' => $this->structured_data ?? [],
         ];
     }
 }

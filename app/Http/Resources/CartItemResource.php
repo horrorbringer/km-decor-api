@@ -9,7 +9,18 @@ class CartItemResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $product = $this->product;
+        $product = $this->whenLoaded('product');
+
+        if (! $product) {
+            return [
+                'id' => $this->id,
+                'product_id' => $this->product_id,
+                'quantity' => $this->quantity,
+                'unit_price' => (float) $this->unit_price,
+                'line_total' => round((float) $this->unit_price * $this->quantity, 2),
+            ];
+        }
+
         $primaryImage = $product->relationLoaded('images')
             ? $product->images->firstWhere('is_primary', true) ?? $product->images->first()
             : null;
@@ -20,7 +31,7 @@ class CartItemResource extends JsonResource
             'name' => $product->name,
             'slug' => $product->slug,
             'sku' => $product->sku,
-            'brand' => $product->brand?->name,
+            'brand' => $product->relationLoaded('brand') ? $product->brand?->name : null,
             'unit' => $product->unit,
             'image_url' => $primaryImage?->image_url,
             'quantity' => $this->quantity,

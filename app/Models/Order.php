@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Notifications\OrderStatusChanged;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Notification;
 
 class Order extends Model
 {
@@ -58,5 +60,23 @@ class Order extends Model
     public function statusHistory(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class)->latest('created_at');
+    }
+
+    protected static function booted(): void
+    {
+        static::updated(function (Order $order) {
+            if ($order->wasChanged('status')) {
+                $oldStatus = $order->getOriginal('status');
+                $newStatus = $order->status;
+
+                $users = User::permission('view_orders')->get();
+
+                Notification::send($users, new OrderStatusChanged(
+                    order: $order,
+                    oldStatus: $oldStatus,
+                    newStatus: $newStatus,
+                ));
+            }
+        });
     }
 }

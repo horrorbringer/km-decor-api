@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\Order;
 use App\Models\ServiceInquiry;
 use App\Models\User;
-use Illuminate\Auth\Notifications\VerifyEmail;
+use App\Notifications\VerifyEmailApi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
@@ -65,6 +65,19 @@ class AdminUserApiTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('email');
     }
 
+    public function test_admin_can_manually_verify_customer_email(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $customer = User::factory()->unverified()->create(['role' => 'customer']);
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/admin/users/{$customer->id}", ['email_verified' => true])
+            ->assertOk()
+            ->assertJsonPath('data.email_verified', true);
+
+        $this->assertNotNull($customer->fresh()->email_verified_at);
+    }
+
     public function test_super_admin_can_create_staff_and_assign_roles(): void
     {
         Notification::fake();
@@ -82,7 +95,7 @@ class AdminUserApiTest extends TestCase
             ->assertJsonPath('data.role', 'sales_staff')
             ->json('data');
 
-        Notification::assertSentTo(User::find($staff['id']), VerifyEmail::class);
+        Notification::assertSentTo(User::find($staff['id']), VerifyEmailApi::class);
 
         $this->patchJson("/api/admin/users/{$staff['id']}", ['role' => 'order_manager'])
             ->assertOk()->assertJsonPath('data.role', 'order_manager');

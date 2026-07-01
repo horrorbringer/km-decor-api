@@ -12,7 +12,12 @@ class EnsureStaffRole
     {
         $allowedRoles = $roles ?: ['super_admin', 'admin'];
 
-        abort_unless($request->user() && in_array($request->user()->role, $allowedRoles, true), 403);
+        $user = $request->user();
+
+        abort_unless(
+            $user && ($user->hasAnyRole($allowedRoles) || in_array($user->role, $allowedRoles, true)),
+            403,
+        );
 
         return $next($request);
     }

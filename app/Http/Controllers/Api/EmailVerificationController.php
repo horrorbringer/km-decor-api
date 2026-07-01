@@ -29,7 +29,15 @@ class EmailVerificationController extends Controller
 
     public function resend(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = User::where('email', strtolower($validated['email']))->first();
+
+        if (! $user) {
+            return response()->json(['message' => 'If that account exists and is not verified, a verification link has been sent.']);
+        }
 
         if ($user->hasVerifiedEmail()) {
             return response()->json(['message' => 'Email address is already verified.']);

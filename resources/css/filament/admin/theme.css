@@ -1,0 +1,48 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+.fi-sidebar-header {
+    background: linear-gradient(135deg, #061b73 0%, #0a2ab3 100%);
+}
+
+.fi-sidebar-header .fi-logo {
+    filter: brightness(0) invert(1);
+}
+
+.fi-sidebar-item a:hover {
+    background: rgba(6, 27, 115, 0.08);
+}
+
+.fi-sidebar-item-active a {
+    background: rgba(6, 27, 115, 0.12);
+    border-left: 3px solid #ed1c24;
+}
+
+.fi-ta-ctn {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.fi-input-wrp {
+    border-radius: 0.5rem;
+}
+
+button.fi-btn {
+    border-radius: 0.5rem;
+    font-weight: 500;
+}
+
+.fi-section {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.fi-topbar {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.fi-badge {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}

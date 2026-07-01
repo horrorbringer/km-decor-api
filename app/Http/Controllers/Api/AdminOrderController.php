@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateAdminOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -35,7 +36,8 @@ class AdminOrderController extends Controller
         ]);
 
         $orders = Order::query()
-            ->with(['items', 'payments'])
+            ->with(['items.product', 'payments'])
+            ->select('id', 'order_number', 'status', 'payment_status', 'customer_name', 'customer_phone', 'customer_email', 'subtotal', 'delivery_fee', 'total_amount', 'currency', 'ordered_at')
             ->when($validated['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
             ->when($validated['payment_status'] ?? null, fn (Builder $query, string $status) => $query->where('payment_status', $status))
             ->when($validated['search'] ?? null, function (Builder $query, string $search) {
@@ -97,6 +99,18 @@ class AdminOrderController extends Controller
                     'to_status' => $nextStatus,
                     'notes' => $request->validated('admin_notes'),
                 ]);
+
+                if ($nextStatus === 'cancelled' && in_array($previousStatus, ['pending', 'confirmed', 'processing'], true)) {
+                    $order->load('items.product');
+                    $restock = $order->items
+                        ->reject(fn ($item) => ! $item->product || $item->product->allow_backorder)
+                        ->groupBy('product_id')
+                        ->map(fn ($items) => $items->sum('quantity'));
+
+                    foreach ($restock as $productId => $totalQty) {
+                        Product::whereKey($productId)->increment('stock_qty', $totalQty);
+                    }
+                }
             }
 
             return $order->load(['items', 'payments', 'statusHistory.changedBy']);

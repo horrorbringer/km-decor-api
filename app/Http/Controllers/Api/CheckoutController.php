@@ -57,6 +57,18 @@ class CheckoutController extends Controller
             ]);
 
             $order->items()->createMany($lines->all());
+
+            $deductions = $lines->reject(fn ($line) => $products[$line['product_id']]->allow_backorder)
+                ->groupBy('product_id')
+                ->map(fn ($items) => $items->sum('quantity'));
+
+            foreach ($deductions as $productId => $totalQty) {
+                Product::query()
+                    ->where('id', $productId)
+                    ->where('stock_qty', '>=', $totalQty)
+                    ->decrement('stock_qty', $totalQty);
+            }
+
             $user?->cart?->items()->delete();
 
             return $order->load('items');

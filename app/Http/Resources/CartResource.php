@@ -9,13 +9,13 @@ class CartResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $subtotal = $this->items->sum(fn ($item) => (float) $item->unit_price * $item->quantity);
+        $items = $this->whenLoaded('items');
 
         return [
             'id' => $this->id,
-            'items' => CartItemResource::collection($this->items),
-            'item_count' => $this->items->sum('quantity'),
-            'subtotal' => round($subtotal, 2),
+            'items' => CartItemResource::collection($items),
+            'item_count' => $this->whenLoaded('items', fn () => $items->sum('quantity')),
+            'subtotal' => $this->whenLoaded('items', fn () => round($items->sum(fn ($item) => (float) $item->unit_price * $item->quantity), 2)),
             'currency' => 'USD',
         ];
     }

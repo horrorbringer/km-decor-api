@@ -20,6 +20,10 @@ class CategoryResource extends JsonResource
             'image_url' => $this->image_url,
             'is_featured' => $this->is_featured,
             'product_count' => $this->whenCounted('products'),
+            'meta_title' => $this->meta_title,
+            'meta_description' => $this->meta_description,
+            'og_image' => $this->og_image ? asset("storage/{$this->og_image}") : null,
+            'structured_data' => $this->structured_data ?? [],
         ];
     }
 }

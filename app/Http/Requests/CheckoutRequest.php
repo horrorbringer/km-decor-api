@@ -19,7 +19,7 @@ class CheckoutRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => [$isGuest ? 'required' : 'nullable', 'email', 'max:255'],
             'delivery_method' => ['required', Rule::in(['delivery', 'pickup'])],
             'area' => ['nullable', 'required_if:delivery_method,delivery', 'string', 'max:255'],
             'address' => ['nullable', 'required_if:delivery_method,delivery', 'string', 'max:1000'],

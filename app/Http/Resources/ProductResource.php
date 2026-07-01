@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\RichContent;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,7 +23,18 @@ class ProductResource extends JsonResource
             'short_description' => $this->short_description,
             'short_description_kh' => $this->short_description_kh,
             'description' => $this->when($request->routeIs('products.show'), $this->description),
+            'description_html' => $this->when($request->routeIs('products.show'), $this->description),
+            'description_text' => $this->when($request->routeIs('products.show'), RichContent::toText($this->description)),
             'description_kh' => $this->when($request->routeIs('products.show'), $this->description_kh),
+            'description_kh_html' => $this->when($request->routeIs('products.show'), $this->description_kh),
+            'description_kh_text' => $this->when($request->routeIs('products.show'), RichContent::toText($this->description_kh)),
+            'customer_goal' => $this->when($request->routeIs('products.show'), $this->customer_goal),
+            'features' => $this->when($request->routeIs('products.show'), $this->features ?? []),
+            'applications' => $this->when($request->routeIs('products.show'), $this->applications ?? []),
+            'material_notes' => $this->when($request->routeIs('products.show'), $this->material_notes ?? []),
+            'lead_time' => $this->when($request->routeIs('products.show'), $this->lead_time),
+            'delivery_note' => $this->when($request->routeIs('products.show'), $this->delivery_note),
+            'compatible_product_slugs' => $this->when($request->routeIs('products.show'), $this->compatible_product_slugs ?? []),
             'category' => new CategoryResource($this->whenLoaded('category')),
             'brand' => new BrandResource($this->whenLoaded('brand')),
             'price' => (float) $this->price,
@@ -50,6 +62,10 @@ class ProductResource extends JsonResource
             'tags' => $this->tags ?? [],
             'primary_image' => $primaryImage?->image_url,
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
+            'meta_title' => $this->when($request->routeIs('products.show'), $this->meta_title),
+            'meta_description' => $this->when($request->routeIs('products.show'), $this->meta_description),
+            'og_image' => $this->when($request->routeIs('products.show'), $this->og_image ? asset("storage/{$this->og_image}") : null),
+            'structured_data' => $this->when($request->routeIs('products.show'), $this->structured_data ?? []),
         ];
     }
 }

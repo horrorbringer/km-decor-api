@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\VerifyEmailApi;
 use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordNotification;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -41,7 +41,7 @@ class AuthApiTest extends TestCase
             'role' => 'customer',
         ]);
         $this->assertDatabaseCount('personal_access_tokens', 1);
-        Notification::assertSentTo(User::where('email', 'dara@example.com')->first(), VerifyEmail::class);
+        Notification::assertSentTo(User::where('email', 'dara@example.com')->first(), VerifyEmailApi::class);
     }
 
     public function test_customer_can_login_and_access_profile(): void
@@ -159,7 +159,8 @@ class AuthApiTest extends TestCase
         $verificationUrl = URL::temporarySignedRoute(
             'verification.verify',
             now()->addMinutes(60),
-            ['user' => $user->id, 'hash' => sha1($user->email)]
+            ['user' => $user->id, 'hash' => sha1($user->email)],
+            false
         );
 
         $this->getJson($verificationUrl)
@@ -183,14 +184,14 @@ class AuthApiTest extends TestCase
     {
         Notification::fake();
         $user = User::factory()->unverified()->create();
-        $token = $user->createToken('browser')->plainTextToken;
 
-        $this->withToken($token)
-            ->postJson('/api/email/verification-notification')
+        $this->postJson('/api/email/verification-notification', [
+            'email' => $user->email,
+        ])
             ->assertOk()
             ->assertJsonPath('message', 'Verification link sent.');
 
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Notification::assertSentTo($user, VerifyEmailApi::class);
     }
 
     public function test_logout_revokes_only_the_current_token(): void

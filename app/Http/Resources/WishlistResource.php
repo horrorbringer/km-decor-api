@@ -9,7 +9,16 @@ class WishlistResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $product = $this->product;
+        $product = $this->whenLoaded('product');
+
+        if (! $product) {
+            return [
+                'id' => $this->id,
+                'saved_at' => $this->created_at,
+                'product' => null,
+            ];
+        }
+
         $primaryImage = $product->relationLoaded('images')
             ? $product->images->firstWhere('is_primary', true) ?? $product->images->first()
             : null;
@@ -24,8 +33,8 @@ class WishlistResource extends JsonResource
                 'slug' => $product->slug,
                 'sku' => $product->sku,
                 'short_description' => $product->short_description,
-                'brand' => $product->brand?->name,
-                'category' => $product->category?->name,
+                'brand' => $product->relationLoaded('brand') ? $product->brand?->name : null,
+                'category' => $product->relationLoaded('category') ? $product->category?->name : null,
                 'price' => (float) $product->price,
                 'compare_price' => $product->compare_price !== null ? (float) $product->compare_price : null,
                 'currency' => $product->currency,

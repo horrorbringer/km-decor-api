@@ -17,7 +17,7 @@ class SearchController extends Controller
     {
         $query = $request->validated('q');
         $limit = $request->integer('limit', 5);
-        $term = "%{$query}%";
+        $term = '%'.static::escapeLikeWildcard($query).'%';
 
         $products = Product::query()
             ->published()
@@ -126,5 +126,10 @@ class SearchController extends Controller
                 'limit_per_group' => $limit,
             ],
         ]);
+    }
+
+    private static function escapeLikeWildcard(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 }

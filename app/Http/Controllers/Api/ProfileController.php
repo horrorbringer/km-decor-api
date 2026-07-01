@@ -13,7 +13,7 @@ class ProfileController extends Controller
 {
     public function update(UpdateProfileRequest $request): UserResource
     {
-        $request->user()->update($request->validated());
+        $request->user()->update($request->only(['name', 'email', 'phone']));
 
         return new UserResource($request->user()->fresh());
     }

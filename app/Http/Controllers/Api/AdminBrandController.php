@@ -22,6 +22,7 @@ class AdminBrandController extends Controller
         ]);
 
         $brands = Brand::query()
+            ->withCount('products')
             ->when($validated['search'] ?? null, fn ($query, $search) => $query->where(fn ($query) => $query
                 ->where('name', 'like', "%{$search}%")
                 ->orWhere('name_kh', 'like', "%{$search}%")

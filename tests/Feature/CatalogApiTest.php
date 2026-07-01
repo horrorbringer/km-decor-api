@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\Service;
+use Database\Seeders\KmdCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -62,7 +63,18 @@ class CatalogApiTest extends TestCase
     {
         $category = Category::create(['name' => 'Decor', 'slug' => 'decor', 'type' => 'product']);
         $brand = Brand::create(['name' => 'KMD', 'slug' => 'kmd']);
-        $product = $this->createProduct($category, $brand, ['slug' => 'decor-panel']);
+        $product = $this->createProduct($category, $brand, [
+            'slug' => 'decor-panel',
+            'description' => '<p>Full <strong>product</strong> description.</p>',
+            'description_kh' => '<p>Khmer <strong>description</strong>.</p>',
+            'customer_goal' => 'Help customers choose a suitable decor panel.',
+            'features' => ['Easy to quote', 'Project-ready finish'],
+            'applications' => ['Cabinet work', 'Feature wall'],
+            'material_notes' => ['Confirm thickness before order'],
+            'lead_time' => '2-4 days',
+            'delivery_note' => 'Delivery by truck',
+            'compatible_product_slugs' => ['draft-panel'],
+        ]);
         $draft = $this->createProduct($category, $brand, [
             'slug' => 'draft-panel',
             'sku' => 'DRAFT-001',
@@ -72,9 +84,39 @@ class CatalogApiTest extends TestCase
         $this->getJson("/api/products/{$product->slug}")
             ->assertOk()
             ->assertJsonPath('data.slug', 'decor-panel')
-            ->assertJsonStructure(['data' => ['description', 'specifications', 'images']]);
+            ->assertJsonPath('data.description_html', '<p>Full <strong>product</strong> description.</p>')
+            ->assertJsonPath('data.description_text', 'Full product description.')
+            ->assertJsonPath('data.description_kh_html', '<p>Khmer <strong>description</strong>.</p>')
+            ->assertJsonPath('data.description_kh_text', 'Khmer description.')
+            ->assertJsonPath('data.customer_goal', 'Help customers choose a suitable decor panel.')
+            ->assertJsonPath('data.features.0', 'Easy to quote')
+            ->assertJsonPath('data.applications.1', 'Feature wall')
+            ->assertJsonPath('data.material_notes.0', 'Confirm thickness before order')
+            ->assertJsonPath('data.lead_time', '2-4 days')
+            ->assertJsonPath('data.delivery_note', 'Delivery by truck')
+            ->assertJsonPath('data.compatible_product_slugs.0', 'draft-panel')
+            ->assertJsonStructure(['data' => ['description', 'description_html', 'description_text', 'specifications', 'images']]);
 
         $this->getJson("/api/products/{$draft->slug}")->assertNotFound();
+    }
+
+    public function test_service_detail_returns_explicit_rich_html_and_plain_text_fields(): void
+    {
+        $service = Service::create([
+            'name' => 'Finished Ceiling',
+            'slug' => 'finished-ceiling',
+            'short_description' => 'Ceiling design and installation.',
+            'description' => '<p>Install <strong>clean ceiling</strong> details.</p>',
+            'description_kh' => '<p>Khmer <strong>service</strong> details.</p>',
+            'is_active' => true,
+        ]);
+
+        $this->getJson("/api/services/{$service->slug}")
+            ->assertOk()
+            ->assertJsonPath('data.description_html', '<p>Install <strong>clean ceiling</strong> details.</p>')
+            ->assertJsonPath('data.description_text', 'Install clean ceiling details.')
+            ->assertJsonPath('data.description_kh_html', '<p>Khmer <strong>service</strong> details.</p>')
+            ->assertJsonPath('data.description_kh_text', 'Khmer service details.');
     }
 
     public function test_categories_brands_and_services_hide_inactive_records(): void
@@ -105,6 +147,32 @@ class CatalogApiTest extends TestCase
         $this->getJson('/api/services/hidden-service')->assertNotFound();
     }
 
+    public function test_kmd_catalog_seeder_exposes_storefront_catalog_with_backend_ids(): void
+    {
+        $this->seed(KmdCatalogSeeder::class);
+
+        $this->assertDatabaseCount('categories', 9);
+        $this->assertDatabaseCount('brands', 8);
+        $this->assertDatabaseCount('products', 10);
+        $this->assertDatabaseCount('services', 4);
+
+        $response = $this->getJson('/api/products/gypsum-board');
+
+        $response->assertOk()
+            ->assertJsonPath('data.slug', 'gypsum-board')
+            ->assertJsonPath('data.sku', 'ZTG-STD-1220')
+            ->assertJsonPath('data.category.slug', 'gypsum-board')
+            ->assertJsonPath('data.brand.slug', 'zeit')
+            ->assertJsonPath('data.stock_status', 'in_stock')
+            ->assertJsonPath('data.primary_image', '/products/gypsum_board.webp');
+
+        $this->assertNotSame('gypsum-board', $response->json('data.id'));
+        $this->assertMatchesRegularExpression(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/',
+            $response->json('data.id'),
+        );
+    }
+
     private function createProduct(Category $category, Brand $brand, array $overrides = []): Product
     {
         return Product::create(array_merge([
@@ -115,6 +183,13 @@ class CatalogApiTest extends TestCase
             'sku' => 'DECOR-001',
             'short_description' => 'A useful decor product.',
             'description' => 'Full product description.',
+            'customer_goal' => null,
+            'features' => [],
+            'applications' => [],
+            'material_notes' => [],
+            'lead_time' => null,
+            'delivery_note' => null,
+            'compatible_product_slugs' => [],
             'specifications' => ['Size' => '1200mm'],
             'tags' => ['decor'],
             'price' => 10.50,

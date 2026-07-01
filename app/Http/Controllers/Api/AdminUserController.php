@@ -92,6 +92,7 @@ class AdminUserController extends Controller
             'phone' => ['sometimes', 'nullable', 'string', 'max:30', Rule::unique('users')->ignore($user->id)],
             'role' => ['sometimes', Rule::in(self::ROLES)],
             'is_active' => ['sometimes', 'boolean'],
+            'email_verified' => ['sometimes', 'boolean'],
         ]);
 
         if (array_key_exists('role', $data) && $actor->role !== 'super_admin') {
@@ -124,6 +125,11 @@ class AdminUserController extends Controller
 
             if ($emailChanged) {
                 $data['email_verified_at'] = null;
+            }
+
+            if (array_key_exists('email_verified', $data)) {
+                $data['email_verified_at'] = $data['email_verified'] ? ($user->email_verified_at ?? now()) : null;
+                unset($data['email_verified']);
             }
 
             $user->forceFill($data)->save();

@@ -12,19 +12,37 @@ use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class AuthController extends Controller
 {
     public function register(RegisterRequest $request): JsonResponse
     {
         $data = $request->safe()->except(['password_confirmation', 'device_name']);
-        $user = User::create($data);
-        $user->sendEmailVerificationNotification();
-        $token = $user->createToken($request->string('device_name')->value() ?: 'web')->plainTextToken;
+        $deviceName = $request->string('device_name')->value() ?: 'web';
+
+        [$user, $token] = DB::transaction(function () use ($data, $deviceName): array {
+            $user = User::create($data);
+            $token = $user->createToken($deviceName)->plainTextToken;
+
+            return [$user, $token];
+        });
+
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (Throwable $exception) {
+            Log::warning('Email verification notification could not be queued after registration.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'exception' => $exception->getMessage(),
+            ]);
+        }
 
         return $this->tokenResponse($user, $token, 201);
     }
@@ -42,6 +60,12 @@ class AuthController extends Controller
         if (! $user->is_active) {
             throw ValidationException::withMessages([
                 'email' => ['This account is inactive.'],
+            ]);
+        }
+
+        if (! $user->hasVerifiedEmail() && ! $user->provider) {
+            throw ValidationException::withMessages([
+                'email' => ['Please verify your email address before logging in.'],
             ]);
         }
 

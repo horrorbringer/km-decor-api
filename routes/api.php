@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\ContactController;
@@ -26,21 +27,26 @@ use App\Http\Controllers\Api\ReorderController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\WishlistController;
+use App\Http\Controllers\Api\SeoController;
+use App\Http\Controllers\Api\SocialAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('throttle:10,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('auth.register');
     Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
+    Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
+
+    Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('social.redirect');
+    Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me'])->name('auth.me');
     Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
-    Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
-        ->middleware('throttle:6,1')
-        ->name('verification.send');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'password'])->name('profile.password');
     Route::get('/addresses', [AddressController::class, 'index'])->name('addresses.index');
@@ -57,10 +63,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cart/items/{item}', [CartController::class, 'destroy'])->name('cart.items.destroy');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-    Route::post('/orders/{order}/reorder', ReorderController::class)->name('orders.reorder');
-    Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->name('payments.store');
+    Route::post('/orders/{order}/reorder', ReorderController::class)->middleware('throttle:10,1')->name('orders.reorder');
+    Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware('throttle:5,1')->name('payments.store');
     Route::get('/inquiries', [CustomerInquiryController::class, 'index'])->name('customer.inquiries.index');
     Route::get('/inquiries/{inquiry}', [CustomerInquiryController::class, 'show'])->name('customer.inquiries.show');
+
+    Route::post('/auth/link', [SocialAuthController::class, 'link'])->name('social.link');
+    Route::post('/auth/unlink', [SocialAuthController::class, 'unlink'])->name('social.unlink');
 
     Route::middleware('staff:super_admin,admin,order_manager')->prefix('admin')->group(function () {
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
@@ -91,7 +100,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::get('/email/verify/{user}/{hash}', [EmailVerificationController::class, 'verify'])
-    ->middleware(['signed', 'throttle:6,1'])
+    ->middleware(['signed:relative', 'throttle:6,1'])
     ->name('verification.verify');
 
 Route::post('/checkout', CheckoutController::class)->middleware('throttle:10,1')->name('checkout');
@@ -102,6 +111,11 @@ Route::get('/products', [ProductController::class, 'index'])->name('products.ind
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('products.show');
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
 Route::get('/services/{service:slug}', [ServiceController::class, 'show'])->name('services.show');
+Route::get('/portfolio', [ProjectController::class, 'index'])->name('portfolio.index');
+Route::get('/portfolio/{project:slug}', [ProjectController::class, 'show'])->name('portfolio.show');
 Route::get('/search', SearchController::class)->middleware('throttle:60,1')->name('search');
 Route::post('/contact', ContactController::class)->middleware('throttle:10,1');
 Route::post('/inquiries', InquiryController::class)->middleware('throttle:10,1');
+
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');

@@ -13,13 +13,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'phone', 'password'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'provider', 'provider_id', 'avatar'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, MustVerifyEmail, Notifiable;
+    use HasApiTokens, HasFactory, MustVerifyEmail, Notifiable, HasRoles;
 
     protected $attributes = [
         'role' => 'customer',
@@ -64,5 +65,10 @@ class User extends Authenticatable implements MustVerifyEmailContract
     public function inquiries(): HasMany
     {
         return $this->hasMany(ServiceInquiry::class);
+    }
+
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmailApi);
     }
 }

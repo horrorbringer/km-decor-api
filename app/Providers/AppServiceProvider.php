@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Brand;
+use App\Models\Category;
+use App\Observers\BrandObserver;
+use App\Observers\CategoryObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
 
@@ -28,5 +32,8 @@ class AppServiceProvider extends ServiceProvider
 
             return rtrim(config('app.frontend_url'), '/').'/reset-password?'.$query;
         });
+
+        Category::observe(CategoryObserver::class);
+        Brand::observe(BrandObserver::class);
     }
 }

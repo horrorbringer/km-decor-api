@@ -8,18 +8,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Product extends Model
+class Product extends Model implements HasMedia
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids, SoftDeletes, InteractsWithMedia;
 
     protected $fillable = [
         'category_id', 'brand_id', 'name', 'name_kh', 'slug', 'sku',
         'short_description', 'short_description_kh', 'description', 'description_kh',
+        'customer_goal', 'features', 'applications', 'material_notes',
+        'lead_time', 'delivery_note', 'compatible_product_slugs',
         'specifications', 'tags', 'price', 'compare_price', 'currency', 'unit',
         'min_order_qty', 'stock_qty', 'allow_backorder', 'requires_installation',
         'warranty_months', 'avg_rating', 'review_count', 'is_featured', 'is_new',
         'is_best_seller', 'sort_order', 'status', 'published_at',
+        'meta_title', 'meta_description', 'og_image', 'structured_data',
     ];
 
     protected function casts(): array
@@ -27,6 +33,11 @@ class Product extends Model
         return [
             'specifications' => 'array',
             'tags' => 'array',
+            'features' => 'array',
+            'applications' => 'array',
+            'material_notes' => 'array',
+            'compatible_product_slugs' => 'array',
+            'structured_data' => 'array',
             'price' => 'decimal:2',
             'compare_price' => 'decimal:2',
             'avg_rating' => 'decimal:2',
@@ -70,5 +81,25 @@ class Product extends Model
     public function wishlistItems(): HasMany
     {
         return $this->hasMany(Wishlist::class);
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('images')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+            ->registerMediaConversions(function (Media $media) {
+                $this->addMediaConversion('thumb')
+                    ->width(300)
+                    ->height(300)
+                    ->fit('crop');
+                $this->addMediaConversion('medium')
+                    ->width(800)
+                    ->height(600)
+                    ->fit('crop');
+            });
+
+        $this->addMediaCollection('documents')
+            ->acceptsMimeTypes(['application/pdf'])
+            ->singleFile();
     }
 }

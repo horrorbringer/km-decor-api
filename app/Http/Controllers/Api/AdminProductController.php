@@ -27,6 +27,7 @@ class AdminProductController extends Controller
 
         $products = Product::query()
             ->with(['category', 'brand', 'images'])
+            ->select('id', 'category_id', 'brand_id', 'name', 'name_kh', 'slug', 'sku', 'price', 'stock_qty', 'status', 'is_featured', 'sort_order', 'updated_at')
             ->when($validated['search'] ?? null, fn ($query, $search) => $query->where(fn ($query) => $query
                 ->where('name', 'like', "%{$search}%")
                 ->orWhere('name_kh', 'like', "%{$search}%")
@@ -158,6 +159,17 @@ class AdminProductController extends Controller
             'short_description_kh' => ['nullable', 'string', 'max:500'],
             'description' => ['nullable', 'string'],
             'description_kh' => ['nullable', 'string'],
+            'customer_goal' => ['nullable', 'string', 'max:1000'],
+            'features' => ['nullable', 'array', 'max:20'],
+            'features.*' => ['string', 'max:255'],
+            'applications' => ['nullable', 'array', 'max:20'],
+            'applications.*' => ['string', 'max:255'],
+            'material_notes' => ['nullable', 'array', 'max:20'],
+            'material_notes.*' => ['string', 'max:255'],
+            'lead_time' => ['nullable', 'string', 'max:120'],
+            'delivery_note' => ['nullable', 'string', 'max:160'],
+            'compatible_product_slugs' => ['nullable', 'array', 'max:20'],
+            'compatible_product_slugs.*' => ['string', 'max:255', 'exists:products,slug'],
             'specifications' => ['nullable', 'array'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:100'],
