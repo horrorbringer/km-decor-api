@@ -2,10 +2,9 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Widgets\LowStockProducts;
-use App\Filament\Widgets\OrderStatusChart;
-use App\Filament\Widgets\RecentOrdersChart;
-use App\Filament\Widgets\StatsOverview;
+use App\Filament\Widgets\LowStockWidget;
+use App\Filament\Widgets\OrdersChart;
+use App\Filament\Widgets\SalesChart;
 use App\Filament\Widgets\TopProductsChart;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -15,8 +14,6 @@ use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -24,6 +21,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Althinect\FilamentSpatieRolesPermissions\FilamentSpatieRolesPermissionsPlugin;
+use Filament\Support\Enums\Width;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -48,7 +46,7 @@ class AdminPanelProvider extends PanelProvider
                     ];
                 } catch (\Exception) {
                     return [
-                        'primary' => Color::hex('#061b73'),
+                        'primary' => Color::hex('#4b0519'),
                         'danger' => Color::hex('#ed1c24'),
                         'success' => Color::hex('#16a34a'),
                         'warning' => Color::hex('#c9a84c'),
@@ -56,6 +54,7 @@ class AdminPanelProvider extends PanelProvider
                     ];
                 }
             })
+            ->maxContentWidth(Width::Full)
             ->navigationGroups([
                 'Catalog',
                 'Content',
@@ -72,11 +71,10 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
-                StatsOverview::class,
-                RecentOrdersChart::class,
-                OrderStatusChart::class,
+                SalesChart::class,
+                OrdersChart::class,
                 TopProductsChart::class,
-                LowStockProducts::class,
+                LowStockWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

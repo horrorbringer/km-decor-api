@@ -2,12 +2,17 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Models\Product;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class OrderForm
@@ -80,7 +85,9 @@ class OrderForm
                             ->required()
                             ->numeric()
                             ->default(0.0)
-                            ->prefix('$'),
+                            ->prefix('$')
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn (Get $get, Set $set): null => self::refreshOrderTotals($get, $set, '')),
                         TextInput::make('total_amount')
                             ->required()
                             ->numeric()
@@ -88,6 +95,97 @@ class OrderForm
                         TextInput::make('currency')
                             ->required()
                             ->default('USD'),
+                    ]),
+
+                Section::make('Ordered Items')
+                    ->description('Select a product to fill the item details, then adjust quantity or pricing if needed.')
+                    ->schema([
+                        Repeater::make('items')
+                            ->relationship()
+                            ->addActionLabel('Add ordered item')
+                            ->defaultItems(0)
+                            ->hiddenLabel()
+                            ->reorderable(false)
+                            ->collapsible()
+                            ->compact()
+                            ->itemLabel(fn (array $state): ?string => $state['product_name'] ?? null)
+                            ->columns(12)
+                            ->schema([
+                                Select::make('product_id')
+                                    ->label('Product')
+                                    ->relationship('product', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->nullable()
+                                    ->live()
+                                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
+                                        if (! $state) {
+                                            return;
+                                        }
+
+                                        $product = Product::query()
+                                            ->select('id', 'name', 'sku', 'unit', 'price')
+                                            ->find($state);
+
+                                        if (! $product) {
+                                            return;
+                                        }
+
+                                        $set('product_name', $product->name);
+                                        $set('product_sku', $product->sku);
+                                        $set('product_unit', $product->unit);
+                                        $set('unit_price', (float) $product->price);
+                                        $set('quantity', 1);
+                                        $set('total_price', (float) $product->price);
+                                        self::refreshOrderTotals($get, $set);
+                                    })
+                                    ->placeholder('Select product')
+                                    ->columnSpan(6),
+                                Hidden::make('product_name')
+                                    ->required(),
+                                Hidden::make('product_sku')
+                                    ->required(),
+                                Hidden::make('product_unit')
+                                    ->required()
+                                    ->default('unit'),
+                                TextInput::make('quantity')
+                                    ->label('Qty')
+                                    ->required()
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(1)
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Get $get, Set $set): void {
+                                        $quantity = max(1, (int) $get('quantity'));
+                                        $unitPrice = max(0, (float) $get('unit_price'));
+
+                                        $set('total_price', round($quantity * $unitPrice, 2));
+                                        self::refreshOrderTotals($get, $set);
+                                    })
+                                    ->columnSpan(2),
+                                TextInput::make('unit_price')
+                                    ->label('Unit price')
+                                    ->required()
+                                    ->numeric()
+                                    ->prefix('$')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Get $get, Set $set): void {
+                                        $quantity = max(1, (int) $get('quantity'));
+                                        $unitPrice = max(0, (float) $get('unit_price'));
+
+                                        $set('total_price', round($quantity * $unitPrice, 2));
+                                        self::refreshOrderTotals($get, $set);
+                                    })
+                                    ->columnSpan(2),
+                                TextInput::make('total_price')
+                                    ->label('Line total')
+                                    ->required()
+                                    ->numeric()
+                                    ->prefix('$')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(fn (Get $get, Set $set): null => self::refreshOrderTotals($get, $set))
+                                    ->columnSpan(2),
+                            ]),
                     ]),
 
                 Section::make('Status & Tracking')
@@ -134,5 +232,17 @@ class OrderForm
                             ->rows(3),
                     ]),
             ]);
+    }
+
+    private static function refreshOrderTotals(Get $get, Set $set, string $parentPath = '../../'): null
+    {
+        $items = $get("{$parentPath}items") ?? [];
+        $subtotal = collect($items)->sum(fn (array $item): float => (float) ($item['total_price'] ?? 0));
+        $deliveryFee = (float) ($get("{$parentPath}delivery_fee") ?? 0);
+
+        $set("{$parentPath}subtotal", round($subtotal, 2));
+        $set("{$parentPath}total_amount", round($subtotal + $deliveryFee, 2));
+
+        return null;
     }
 }

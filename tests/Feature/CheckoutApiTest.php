@@ -62,6 +62,26 @@ class CheckoutApiTest extends TestCase
         $this->assertDatabaseHas('orders', ['user_id' => null, 'customer_phone' => '012345678']);
     }
 
+    public function test_authenticated_customer_can_checkout_with_explicit_items_when_cart_is_empty(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+        $product = $this->createProduct(['price' => 8.50]);
+
+        $response = $this->postJson('/api/checkout', [
+            ...$this->checkoutPayload(),
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.customer.name', 'Sok Dara')
+            ->assertJsonPath('data.subtotal', 8.5)
+            ->assertJsonPath('data.items.0.product_id', $product->id)
+            ->assertJsonPath('data.items.0.quantity', 1);
+
+        $this->assertDatabaseHas('orders', ['user_id' => $user->id, 'subtotal' => 8.5]);
+    }
+
     public function test_checkout_rejects_empty_cart_and_stock_changes(): void
     {
         $user = User::factory()->create();

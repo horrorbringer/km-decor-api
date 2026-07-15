@@ -18,9 +18,10 @@ class CheckoutController extends Controller
     public function __invoke(CheckoutRequest $request): JsonResponse
     {
         $user = $request->user('sanctum');
-        $requestedItems = $user
-            ? $user->cart?->items()->get(['product_id', 'quantity']) ?? collect()
-            : collect($request->validated('items'));
+        $validatedItems = $request->validated('items');
+        $requestedItems = filled($validatedItems)
+            ? collect($validatedItems)
+            : ($user?->cart?->items()->get(['product_id', 'quantity']) ?? collect());
 
         if ($requestedItems->isEmpty()) {
             throw ValidationException::withMessages(['items' => ['The cart is empty.']]);

@@ -6,26 +6,29 @@ use App\Models\Order;
 use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
 
-class RecentOrdersChart extends ChartWidget
+class SalesChart extends ChartWidget
 {
-    protected ?string $heading = 'Orders (Last 30 Days)';
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 1;
+
     protected int | string | array $columnSpan = 1;
-    protected ?string $maxHeight = '500px';
+
+    protected ?string $maxHeight = '300px';
+
+    protected ?string $heading = 'Sales';
 
     protected function getData(): array
     {
         $results = Order::selectRaw("DATE(created_at) as date, COUNT(*) as count")
-            ->whereDate('created_at', '>=', Carbon::today()->subDays(29))
+            ->whereDate('created_at', '>=', Carbon::today()->subDays(6))
             ->groupBy('date')
             ->pluck('count', 'date');
 
         $labels = collect();
         $data = collect();
 
-        for ($i = 29; $i >= 0; $i--) {
+        for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
-            $labels->push($date->format('M d'));
+            $labels->push($date->format('D'));
             $data->push((int) ($results[$date->toDateString()] ?? 0));
         }
 
@@ -34,9 +37,10 @@ class RecentOrdersChart extends ChartWidget
                 [
                     'label' => 'Orders',
                     'data' => $data->toArray(),
-                    'backgroundColor' => '#061b73',
-                    'borderColor' => '#061b73',
+                    'backgroundColor' => '#2563eb',
+                    'borderColor' => '#2563eb',
                     'tension' => 0.3,
+                    'fill' => true,
                 ],
             ],
             'labels' => $labels->toArray(),

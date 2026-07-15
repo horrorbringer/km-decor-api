@@ -1,0 +1,62 @@
+# .ftpignore
+# Files excluded from FTP upload by SamKirkland/FTP-Deploy-Action
+# Syntax: same as .gitignore
+
+# ── Environment files — NEVER upload, managed on server only ───────────────
+.env
+.env.*
+
+# ── Version control ────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── Dev tooling & IDE ──────────────────────────────────────────────────────
+.codex/
+.cursor/
+.idea/
+.nova/
+.phpactor.json
+.phpunit.cache/
+.phpunit.result.cache
+.vscode/
+.zed/
+_ide_helper.php
+Homestead.json
+Homestead.yaml
+
+# ── Node / npm ─────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log
+.npmrc
+
+# ── Tests ──────────────────────────────────────────────────────────────────
+tests/
+phpunit.xml
+
+# ── Dev-only source files ──────────────────────────────────────────────────
+# Vite source — compiled output in public/build is uploaded
+vite.config.js
+package.json
+package-lock.json
+resources/js/
+resources/css/
+
+# ── Logs & runtime state (server-owned) ────────────────────────────────────
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/app/public/
+
+# ── Local SQLite database ──────────────────────────────────────────────────
+database/database.sqlite
+
+# ── CI / deploy internals ──────────────────────────────────────────────────
+.ftp-deploy-sync-state.json
+.github/
+
+# ── OS noise ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log

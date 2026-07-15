@@ -7,11 +7,11 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 
-class LowStockProducts extends BaseWidget
+class LowStockWidget extends BaseWidget
 {
-    protected static ?int $sort = 5;
+    protected static ?int $sort = 4;
 
-    protected int|string|array $columnSpan = 1;
+    protected int | string | array $columnSpan = 1;
 
     public function table(Table $table): Table
     {
@@ -19,7 +19,6 @@ class LowStockProducts extends BaseWidget
             ->query(
                 Product::query()
                     ->where('stock_qty', '<', 10)
-                    ->where('status', 'published')
                     ->orderBy('stock_qty')
                     ->limit(10)
             )
@@ -37,8 +36,6 @@ class LowStockProducts extends BaseWidget
                         default => 'gray',
                     })
                     ->sortable(),
-                TextColumn::make('price')
-                    ->money('USD'),
             ]);
     }
 

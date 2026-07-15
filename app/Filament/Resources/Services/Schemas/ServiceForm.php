@@ -6,6 +6,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
@@ -52,14 +53,38 @@ class ServiceForm
                             ->default(null),
                         RichEditor::make('description')
                             ->default(null)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->toolbarButtons([
+                                ['bold', 'italic', 'underline', 'strike', 'link'],
+                                [ToolbarButtonGroup::make('Heading', ['paragraph', 'h1', 'h2', 'h3'])->textualButtons()],
+                                [ToolbarButtonGroup::make('Align', ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'])],
+                                [ToolbarButtonGroup::make('List', ['bulletList', 'orderedList'])],
+                                ['blockquote', 'codeBlock'],
+                                ['undo', 'redo'],
+                            ]),
                         RichEditor::make('description_kh')
                             ->default(null)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->toolbarButtons([
+                                ['bold', 'italic', 'underline', 'strike', 'link'],
+                                [ToolbarButtonGroup::make('Heading', ['paragraph', 'h1', 'h2', 'h3'])->textualButtons()],
+                                [ToolbarButtonGroup::make('Align', ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'])],
+                                [ToolbarButtonGroup::make('List', ['bulletList', 'orderedList'])],
+                                ['blockquote', 'codeBlock'],
+                                ['undo', 'redo'],
+                            ]),
                         RichEditor::make('faqs')
                             ->label('FAQ')
                             ->default(null)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->toolbarButtons([
+                                ['bold', 'italic', 'underline', 'strike', 'link'],
+                                [ToolbarButtonGroup::make('Heading', ['paragraph', 'h1', 'h2', 'h3'])->textualButtons()],
+                                [ToolbarButtonGroup::make('Align', ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'])],
+                                [ToolbarButtonGroup::make('List', ['bulletList', 'orderedList'])],
+                                ['blockquote', 'codeBlock'],
+                                ['undo', 'redo'],
+                            ]),
                     ]),
 
                 Section::make('Media')

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Orders\Schemas;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class OrderInfolist
 {
@@ -57,6 +58,41 @@ class OrderInfolist
                         TextEntry::make('total_amount')
                             ->money('USD'),
                         TextEntry::make('currency'),
+                    ]),
+
+                Section::make('Ordered Items')
+                    ->description('Products captured at checkout or entered manually for this order.')
+                    ->schema([
+                        TextEntry::make('items_summary')
+                            ->hiddenLabel()
+                            ->state(function ($record): HtmlString {
+                                $items = $record->items;
+
+                                if ($items->isEmpty()) {
+                                    return new HtmlString('<span class="text-gray-500">No ordered items recorded.</span>');
+                                }
+
+                                $rows = $items->map(function ($item): string {
+                                    $name = e($item->product_name);
+                                    $sku = e($item->product_sku);
+                                    $unit = e($item->product_unit);
+                                    $quantity = number_format((float) $item->quantity);
+                                    $unitPrice = number_format((float) $item->unit_price, 2);
+                                    $lineTotal = number_format((float) $item->total_price, 2);
+
+                                    return <<<HTML
+                                        <li style="padding: 10px 0; border-bottom: 1px solid rgba(148, 163, 184, .28);">
+                                            <div style="font-weight: 600;">{$name}</div>
+                                            <div style="margin-top: 4px; color: rgb(100, 116, 139); font-size: 13px;">
+                                                SKU: {$sku} · Qty: {$quantity} {$unit} · Unit: \${$unitPrice} · Total: \${$lineTotal}
+                                            </div>
+                                        </li>
+                                    HTML;
+                                })->implode('');
+
+                                return new HtmlString("<ul style=\"margin: 0; padding: 0; list-style: none;\">{$rows}</ul>");
+                            })
+                            ->html(),
                     ]),
 
                 Section::make('Status & Tracking')

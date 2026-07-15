@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Notifications\OrderStatusChanged;
+use App\Services\InvoiceService;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Notification;
 
 class Order extends Model
@@ -62,12 +64,25 @@ class Order extends Model
         return $this->hasMany(OrderStatusHistory::class)->latest('created_at');
     }
 
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class);
+    }
+
     protected static function booted(): void
     {
         static::updated(function (Order $order) {
             if ($order->wasChanged('status')) {
                 $oldStatus = $order->getOriginal('status');
                 $newStatus = $order->status;
+
+                if ($newStatus === 'completed' && $oldStatus !== 'completed') {
+                    try {
+                        app(InvoiceService::class)->generateForOrder($order);
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                }
 
                 $users = User::permission('view_orders')->get();
 

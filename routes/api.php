@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\CustomerInquiryController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\InquiryController;
+use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProductController;
@@ -67,6 +68,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{order}/payments', [PaymentController::class, 'store'])->middleware('throttle:5,1')->name('payments.store');
     Route::get('/inquiries', [CustomerInquiryController::class, 'index'])->name('customer.inquiries.index');
     Route::get('/inquiries/{inquiry}', [CustomerInquiryController::class, 'show'])->name('customer.inquiries.show');
+    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+    Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
+    Route::post('/orders/{order}/invoice', [InvoiceController::class, 'generateFromOrder'])->name('orders.invoice');
 
     Route::post('/auth/link', [SocialAuthController::class, 'link'])->name('social.link');
     Route::post('/auth/unlink', [SocialAuthController::class, 'unlink'])->name('social.unlink');

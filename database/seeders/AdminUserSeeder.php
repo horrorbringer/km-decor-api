@@ -18,6 +18,7 @@ class AdminUserSeeder extends Seeder
             'view_services', 'create_services', 'update_services', 'delete_services',
             'view_portfolios', 'create_portfolios', 'update_portfolios', 'delete_portfolios',
             'view_orders', 'update_orders', 'delete_orders', 'export_orders',
+            'view_invoices', 'create_invoices', 'update_invoices', 'delete_invoices',
             'view_inquiries', 'update_inquiries',
             'view_users', 'create_users', 'update_users', 'delete_users',
             'view_roles', 'create_roles', 'update_roles', 'delete_roles',
@@ -40,6 +41,7 @@ class AdminUserSeeder extends Seeder
             'view_services', 'create_services', 'update_services',
             'view_portfolios', 'create_portfolios', 'update_portfolios',
             'view_orders', 'update_orders', 'export_orders',
+            'view_invoices', 'create_invoices', 'update_invoices',
             'view_inquiries', 'update_inquiries',
             'view_users', 'create_users', 'update_users',
             'view_roles', 'create_roles', 'update_roles',
@@ -50,6 +52,7 @@ class AdminUserSeeder extends Seeder
         $orderManager = Role::firstOrCreate(['name' => 'order_manager', 'guard_name' => 'web']);
         $orderManager->givePermissionTo([
             'view_orders', 'update_orders', 'export_orders',
+            'view_invoices', 'create_invoices', 'update_invoices',
             'view_products',
             'view_inquiries', 'update_inquiries',
         ]);
@@ -58,6 +61,7 @@ class AdminUserSeeder extends Seeder
         $salesStaff->givePermissionTo([
             'view_products',
             'view_orders',
+            'view_invoices',
             'view_inquiries', 'update_inquiries',
         ]);
 

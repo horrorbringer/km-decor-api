@@ -1,0 +1,111 @@
+name: Deploy to cPanel (FTP)
+
+on:
+  push:
+    branches:
+      - main          # trigger on push to main
+  workflow_dispatch:  # allow manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    name: Build & Deploy via FTP
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Setup PHP ───────────────────────────────────────────────────────
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, bcmath, pdo, pdo_mysql, xml, curl, zip, gd
+          tools: composer:v2
+          coverage: none
+
+      # ── 3. Cache Composer dependencies ─────────────────────────────────────
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      # ── 4. Install Composer dependencies (production, no dev) ──────────────
+      - name: Install Composer dependencies
+        run: |
+          composer install \
+            --no-dev \
+            --no-interaction \
+            --prefer-dist \
+            --optimize-autoloader \
+            --no-progress
+
+      # ── 5. Setup Node & build frontend assets (Vite/Filament) ──────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build frontend assets
+        run: npm run build
+
+      # ── 6. Upload via FTP ───────────────────────────────────────────────────
+      #   .env is NEVER uploaded — it lives only on the server.
+      #   Create it once via cPanel File Manager (see deploy/README.md).
+      #   Only changed files are uploaded (incremental, state-tracked).
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT }}              # 21 for FTP/FTPS, 22 for SFTP
+          protocol: ftp                               # change to ftps if host supports it
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}  # e.g. /public_html/ or /public_html/api/
+          local-dir: ./
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .env
+            .env.*
+            .ftp-deploy-sync-state.json
+          log-level: minimal
+          dangerous-clean-slate: false               # set true only on very first deploy
+
+      # ── 7. Trigger post-deploy script ──────────────────────────────────────
+      #   The PHP script on the server runs migrations and rebuilds caches.
+      #   It authenticates using DEPLOY_SECRET stored in the server's .env.
+      - name: Run post-deploy script
+        run: |
+          RESPONSE=$(curl -s -o /tmp/post_deploy_out.txt -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"secret\": \"${{ secrets.DEPLOY_SECRET }}\"}" \
+            "${{ secrets.APP_URL }}/deploy/post-deploy.php")
+
+          echo "--- Post-deploy response (HTTP $RESPONSE) ---"
+          cat /tmp/post_deploy_out.txt
+
+          if [ "$RESPONSE" != "200" ]; then
+            echo "::error::Post-deploy script returned HTTP $RESPONSE"
+            exit 1
+          fi
+
+          if ! grep -q "DEPLOY_OK" /tmp/post_deploy_out.txt; then
+            echo "::error::Post-deploy script did not return DEPLOY_OK"
+            exit 1
+          fi

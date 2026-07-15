@@ -7,15 +7,17 @@ use Filament\Widgets\ChartWidget;
 
 class TopProductsChart extends ChartWidget
 {
-    protected static ?int $sort = 4;
+    protected static ?int $sort = 3;
+
     protected int | string | array $columnSpan = 1;
-    protected int | string | array $columnStart = 2;
-    protected ?string $maxHeight = '350px';
+
+    protected ?string $maxHeight = '300px';
+
     protected ?string $heading = 'Top Selling Products';
 
     protected function getData(): array
     {
-        $top = OrderItem::selectRaw('product_name, sum(quantity) as total_qty')
+        $top = OrderItem::selectRaw('product_name, SUM(quantity) as total_qty')
             ->groupBy('product_name')
             ->orderByDesc('total_qty')
             ->limit(5)

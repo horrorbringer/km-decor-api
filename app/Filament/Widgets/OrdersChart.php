@@ -5,22 +5,21 @@ namespace App\Filament\Widgets;
 use App\Models\Order;
 use Filament\Widgets\ChartWidget;
 
-class OrderStatusChart extends ChartWidget
+class OrdersChart extends ChartWidget
 {
-    protected static ?int $sort = 3;
+    protected static ?int $sort = 2;
+
     protected int | string | array $columnSpan = 1;
-    protected int | string | array $columnStart = 2;
-    protected ?string $maxHeight = '350px';
-    protected ?string $heading = 'Order Status Distribution';
+
+    protected ?string $maxHeight = '300px';
+
+    protected ?string $heading = 'Orders by Status';
 
     protected function getData(): array
     {
-        $colors = [
-            'pending' => '#f59e0b',
-            'confirmed' => '#3b82f6',
-            'shipped' => '#8b5cf6',
-            'completed' => '#16a34a',
-            'cancelled' => '#ef4444',
+        $palette = [
+            '#f59e0b', '#3b82f6', '#8b5cf6', '#16a34a', '#ef4444',
+            '#06b6d4', '#f97316', '#ec4899', '#84cc16', '#6366f1',
         ];
 
         $counts = Order::selectRaw('status, COUNT(*) as count')
@@ -30,14 +29,19 @@ class OrderStatusChart extends ChartWidget
         $labels = [];
         $data = [];
         $bgColors = [];
+        $i = 0;
 
-        foreach (['pending', 'confirmed', 'shipped', 'completed', 'cancelled'] as $status) {
-            $count = (int) ($counts[$status] ?? 0);
-            if ($count > 0) {
-                $labels[] = ucfirst($status);
-                $data[] = $count;
-                $bgColors[] = $colors[$status];
-            }
+        foreach ($counts as $status => $count) {
+            $labels[] = ucfirst(str_replace('_', ' ', $status));
+            $data[] = (int) $count;
+            $bgColors[] = $palette[$i % count($palette)];
+            $i++;
+        }
+
+        if (empty($labels)) {
+            $labels = ['No orders'];
+            $data = [0];
+            $bgColors = ['#d1d5db'];
         }
 
         return [
@@ -46,7 +50,6 @@ class OrderStatusChart extends ChartWidget
                     'label' => 'Orders',
                     'data' => $data,
                     'backgroundColor' => $bgColors,
-                    'borderColor' => $bgColors,
                 ],
             ],
             'labels' => $labels,
@@ -66,7 +69,7 @@ class OrderStatusChart extends ChartWidget
                     'position' => 'right',
                 ],
             ],
-            'cutout' => '55%',
+            'cutout' => '60%',
         ];
     }
 }
