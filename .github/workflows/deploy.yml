@@ -10,7 +10,7 @@ jobs:
   deploy:
     name: Build & Deploy via FTP
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       # ── 1. Checkout ────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ jobs:
             **/.git*
             **/.git*/**
             **/node_modules/**
-            **/vendor/**
+
             .env
             .env.*
             .ftp-deploy-sync-state.json
