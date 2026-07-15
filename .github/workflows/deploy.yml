@@ -80,6 +80,7 @@ jobs:
             **/.git*
             **/.git*/**
             **/node_modules/**
+            **/vendor/**
             .env
             .env.*
             .ftp-deploy-sync-state.json

@@ -153,7 +153,35 @@ if ($phpBin === null) {
 
 $log[] = "[✓] PHP CLI: {$phpBin}";
 
-// ── Step 3: Run artisan commands ───────────────────────────────────────────
+// ── Step 3: Install Composer dependencies ──────────────────────────────────
+// vendor/ is excluded from FTP upload to avoid timeouts, so install on server.
+
+$composerBinaries = [
+    '/usr/local/bin/composer',
+    '/opt/cpanel/composer/bin/composer',
+    'composer',
+    '/usr/bin/composer',
+];
+
+$composerBin = null;
+foreach ($composerBinaries as $bin) {
+    $test = shell_exec(sprintf('%s --version 2>/dev/null', escapeshellcmd($bin)));
+    if ($test !== null && $test !== '') {
+        $composerBin = $bin;
+        break;
+    }
+}
+
+if ($composerBin !== null) {
+    $log[] = "[✓] Composer: {$composerBin}";
+    step('Composer install', "{$phpBin} {$composerBin} install --no-dev --no-interaction --prefer-dist --optimize-autoloader", $laravelRoot, required: true);
+} else {
+    $log[] = '[✗] Composer not found — vendor/ may be missing';
+    $error = true;
+    respondAndExit($log, $error);
+}
+
+// ── Step 4: Run artisan commands ───────────────────────────────────────────
 
 $artisan = "{$phpBin} artisan";
 
