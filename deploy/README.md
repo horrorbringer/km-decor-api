@@ -45,7 +45,7 @@ APP_ENV=production
 APP_KEY=base64:...          # php artisan key:generate --show
 APP_DEBUG=false
 APP_URL=https://api.kmdecor.com
-FRONTEND_URL=https://kmdecor.com
+FRONTEND_URL=https://kimmex-decor.vercel.app
 
 LOG_CHANNEL=single
 LOG_LEVEL=error
@@ -75,7 +75,7 @@ MAIL_PASSWORD=your_mail_password
 MAIL_FROM_ADDRESS="noreply@kmdecor.com"
 MAIL_FROM_NAME="KM Decor"
 
-SANCTUM_STATEFUL_DOMAINS=kmdecor.com,www.kmdecor.com
+SANCTUM_STATEFUL_DOMAINS=kimmex-decor.vercel.app,www.kimmex-decor.vercel.app
 
 # Used to authenticate the post-deploy.php script
 # Generate: openssl rand -hex 32
