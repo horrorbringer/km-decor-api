@@ -163,7 +163,8 @@ $artisan = "{$phpBin} artisan";
 
 step('Maintenance ON',   "{$artisan} down --secret=deploy-bypass",              $laravelRoot);
 step('Migrate',          "{$artisan} migrate --force --no-interaction",          $laravelRoot);
-step('Settings migrate', "{$artisan} settings:migrate --force --no-interaction", $laravelRoot, required: false);
+step('Settings discover', "{$artisan} settings:discover --no-interaction",       $laravelRoot, required: false);
+step('Settings cache clear', "{$artisan} settings:clear-cache --no-interaction", $laravelRoot, required: false);
 
 if (($payload['seed'] ?? false) === true) {
     step('Seed database', "{$artisan} db:seed --force --no-interaction", $laravelRoot);
