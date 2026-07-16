@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\CustomerInquiryController;
 use App\Http\Controllers\Api\EmailVerificationController;
+use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InquiryController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\OrderController;
@@ -110,6 +112,8 @@ Route::get('/email/verify/{user}/{hash}', [EmailVerificationController::class, '
 
 Route::post('/checkout', CheckoutController::class)->middleware('throttle:10,1')->name('checkout');
 
+Route::get('/health', HealthController::class)->name('health');
+Route::get('/home', HomeController::class)->name('home');
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
