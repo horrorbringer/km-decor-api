@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PerformanceCache;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,5 +29,11 @@ class OrderItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => PerformanceCache::forgetOrders());
+        static::deleted(fn () => PerformanceCache::forgetOrders());
     }
 }

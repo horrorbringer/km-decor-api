@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Notifications\OrderStatusChanged;
 use App\Services\InvoiceService;
+use App\Support\PerformanceCache;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -72,6 +73,9 @@ class Order extends Model
 
     protected static function booted(): void
     {
+        static::saved(fn () => PerformanceCache::forgetOrders());
+        static::deleted(fn () => PerformanceCache::forgetOrders());
+
         static::updated(function (Order $order) {
             if ($order->wasChanged('status')) {
                 $oldStatus = $order->getOriginal('status');

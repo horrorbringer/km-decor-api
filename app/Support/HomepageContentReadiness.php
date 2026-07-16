@@ -7,22 +7,25 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\Service;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class HomepageContentReadiness
 {
     public function summary(): array
     {
-        $sections = [
-            $this->products(),
-            $this->services(),
-            $this->projects(),
-            $this->brands(),
-        ];
+        return Cache::remember(PerformanceCache::HOMEPAGE_READINESS, now()->addMinute(), function (): array {
+            $sections = [
+                $this->products(),
+                $this->services(),
+                $this->projects(),
+                $this->brands(),
+            ];
 
-        return [
-            'sections' => $sections,
-            'issue_count' => collect($sections)->sum(fn (array $section): int => count($section['issues'])),
-        ];
+            return [
+                'sections' => $sections,
+                'issue_count' => collect($sections)->sum(fn (array $section): int => count($section['issues'])),
+            ];
+        });
     }
 
     private function products(): array
@@ -111,7 +114,7 @@ class HomepageContentReadiness
         $allIssues = $issues->values();
 
         if ($missingCount > 0) {
-            $allIssues->prepend("Add {$missingCount} more featured item" . ($missingCount === 1 ? '' : 's') . '.');
+            $allIssues->prepend("Add {$missingCount} more featured item".($missingCount === 1 ? '' : 's').'.');
         }
 
         return [

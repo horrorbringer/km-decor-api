@@ -4,10 +4,16 @@ namespace App\Providers;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Product;
+use App\Models\ProductImage;
+use App\Models\Project;
+use App\Models\Service;
 use App\Observers\BrandObserver;
 use App\Observers\CategoryObserver;
+use App\Observers\ContentPerformanceObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,5 +41,12 @@ class AppServiceProvider extends ServiceProvider
 
         Category::observe(CategoryObserver::class);
         Brand::observe(BrandObserver::class);
+        Product::observe(ContentPerformanceObserver::class);
+        ProductImage::observe(ContentPerformanceObserver::class);
+        Service::observe(ContentPerformanceObserver::class);
+        Project::observe(ContentPerformanceObserver::class);
+        Category::observe(ContentPerformanceObserver::class);
+        Brand::observe(ContentPerformanceObserver::class);
+        Media::observe(ContentPerformanceObserver::class);
     }
 }

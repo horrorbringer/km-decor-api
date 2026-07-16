@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\Service;
+use App\Support\PerformanceCache;
 use Database\Seeders\KmdCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class HomeAndHealthApiTest extends TestCase
@@ -55,5 +57,25 @@ class HomeAndHealthApiTest extends TestCase
             ->assertJsonPath('status', 'ok')
             ->assertJsonPath('checks.database', true)
             ->assertJsonStructure(['app', 'environment', 'timestamp']);
+    }
+
+    public function test_home_endpoint_is_cached_and_content_changes_invalidate_it(): void
+    {
+        $this->seed(KmdCatalogSeeder::class);
+
+        $this->getJson('/api/home')->assertOk();
+        $this->assertTrue(Cache::has(PerformanceCache::HOMEPAGE));
+
+        $product = Product::where('slug', 'gypsum-board')->firstOrFail();
+        $product->update(['is_featured' => false]);
+
+        $this->assertFalse(Cache::has(PerformanceCache::HOMEPAGE));
+
+        $response = $this->getJson('/api/home')->assertOk();
+
+        $this->assertNotContains(
+            'gypsum-board',
+            collect($response->json('data.featured_products'))->pluck('slug')->all(),
+        );
     }
 }
