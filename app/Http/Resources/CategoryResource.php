@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\StoredMediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,12 +18,12 @@ class CategoryResource extends JsonResource
             'description' => $this->description,
             'type' => $this->type,
             'icon' => $this->icon,
-            'image_url' => $this->image_url,
+            'image_url' => $this->effectiveImageUrl(),
             'is_featured' => $this->is_featured,
             'product_count' => $this->whenCounted('products'),
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
-            'og_image' => $this->og_image ? asset("storage/{$this->og_image}") : null,
+            'og_image' => StoredMediaUrl::from($this->og_image),
             'structured_data' => $this->structured_data ?? [],
         ];
     }

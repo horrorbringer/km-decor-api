@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\RichContent;
+use App\Support\StoredMediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -10,9 +11,27 @@ class ProductResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $primaryImage = $this->relationLoaded('images')
-            ? $this->images->firstWhere('is_primary', true) ?? $this->images->first()
-            : null;
+        $mediaImages = $this->getMedia('images');
+        $legacyImages = $this->relationLoaded('images') ? $this->images : collect();
+        $images = $mediaImages->isNotEmpty()
+            ? $mediaImages->values()->map(fn ($media, int $index): array => [
+                'id' => (string) $media->id,
+                'image_url' => $media->getUrl(),
+                'url' => $media->getUrl(),
+                'thumb_url' => $media->getAvailableUrl(['thumb']),
+                'alt_text' => $media->getCustomProperty('alt_text', $this->name),
+                'is_primary' => $index === 0,
+                'sort_order' => $media->order_column,
+            ])
+            : $legacyImages->values()->map(fn ($image): array => [
+                'id' => $image->id,
+                'image_url' => $image->image_url,
+                'url' => $image->image_url,
+                'thumb_url' => $image->image_url,
+                'alt_text' => $image->alt_text,
+                'is_primary' => $image->is_primary,
+                'sort_order' => $image->sort_order,
+            ]);
 
         return [
             'id' => $this->id,
@@ -60,11 +79,11 @@ class ProductResource extends JsonResource
             ])),
             'specifications' => $this->when($request->routeIs('products.show'), $this->specifications ?? []),
             'tags' => $this->tags ?? [],
-            'primary_image' => $primaryImage?->image_url,
-            'images' => ProductImageResource::collection($this->whenLoaded('images')),
+            'primary_image' => $this->primaryImageUrl(),
+            'images' => $images,
             'meta_title' => $this->when($request->routeIs('products.show'), $this->meta_title),
             'meta_description' => $this->when($request->routeIs('products.show'), $this->meta_description),
-            'og_image' => $this->when($request->routeIs('products.show'), $this->og_image ? asset("storage/{$this->og_image}") : null),
+            'og_image' => $this->when($request->routeIs('products.show'), StoredMediaUrl::from($this->og_image)),
             'structured_data' => $this->when($request->routeIs('products.show'), $this->structured_data ?? []),
         ];
     }

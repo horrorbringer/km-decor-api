@@ -25,7 +25,7 @@ class ProductController extends Controller
 
         $products = Product::query()
             ->published()
-            ->with(['category', 'brand', 'images'])
+            ->with(['category', 'brand', 'images', 'media'])
             ->when($validated['search'] ?? null, function (Builder $query, string $search) {
                 $query->where(function (Builder $query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
@@ -56,6 +56,6 @@ class ProductController extends Controller
             404,
         );
 
-        return new ProductResource($product->load(['category', 'brand', 'images']));
+        return new ProductResource($product->load(['category', 'brand', 'images', 'media']));
     }
 }

@@ -19,7 +19,7 @@ class ProjectController extends Controller
 
         $projects = Project::query()
             ->published()
-            ->with(['services', 'products'])
+            ->with(['media', 'services.media', 'products.category', 'products.brand', 'products.images', 'products.media'])
             ->when(array_key_exists('featured', $validated), fn ($query) => $query->where('is_featured', $validated['featured']))
             ->orderBy('sort_order')
             ->orderByDesc('published_at');
@@ -34,6 +34,6 @@ class ProjectController extends Controller
             404,
         );
 
-        return new ProjectResource($project->load(['services', 'products']));
+        return new ProjectResource($project->load(['media', 'services.media', 'products.category', 'products.brand', 'products.images', 'products.media']));
     }
 }

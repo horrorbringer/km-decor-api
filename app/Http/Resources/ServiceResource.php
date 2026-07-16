@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\RichContent;
+use App\Support\StoredMediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -33,7 +34,7 @@ class ServiceResource extends JsonResource
             'is_featured' => $this->is_featured,
             'meta_title' => $this->when($request->routeIs('services.show'), $this->meta_title),
             'meta_description' => $this->when($request->routeIs('services.show'), $this->meta_description),
-            'og_image' => $this->when($request->routeIs('services.show'), $this->og_image ? asset("storage/{$this->og_image}") : null),
+            'og_image' => $this->when($request->routeIs('services.show'), StoredMediaUrl::from($this->og_image)),
             'structured_data' => $this->when($request->routeIs('services.show'), $this->structured_data ?? []),
         ];
     }

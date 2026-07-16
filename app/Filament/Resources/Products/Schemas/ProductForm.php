@@ -6,11 +6,12 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
-use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -164,8 +165,9 @@ class ProductForm
                     ->required()
                     ->default('draft'),
                 DateTimePicker::make('published_at'),
-                FileUpload::make('images')
+                SpatieMediaLibraryFileUpload::make('images')
                     ->label('Product Images')
+                    ->collection('images')
                     ->multiple()
                     ->image()
                     ->imageEditor()
@@ -174,8 +176,6 @@ class ProductForm
                         '4:3',
                         '1:1',
                     ])
-                    ->directory('products')
-                    ->visibility('public')
                     ->maxFiles(10)
                     ->reorderable()
                     ->columnSpanFull(),

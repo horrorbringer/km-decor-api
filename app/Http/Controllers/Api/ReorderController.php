@@ -63,7 +63,7 @@ class ReorderController extends Controller
             }
 
             return [
-                'cart' => $cart->load(['items.product.brand', 'items.product.images']),
+                'cart' => $cart->load(['items.product.brand', 'items.product.images', 'items.product.media']),
                 'added' => $added,
                 'skipped' => $skipped,
             ];

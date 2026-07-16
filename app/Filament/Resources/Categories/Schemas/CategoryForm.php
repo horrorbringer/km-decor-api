@@ -4,10 +4,11 @@ namespace App\Filament\Resources\Categories\Schemas;
 
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -48,8 +49,9 @@ class CategoryForm
 
                 Section::make('Image & Description')
                     ->schema([
-                        FileUpload::make('image')
+                        SpatieMediaLibraryFileUpload::make('image')
                             ->label('Category Image')
+                            ->collection('image')
                             ->image()
                             ->imageEditor()
                             ->imageEditorAspectRatios([
@@ -57,8 +59,6 @@ class CategoryForm
                                 '4:3',
                                 '1:1',
                             ])
-                            ->directory('categories')
-                            ->visibility('public')
                             ->maxFiles(1),
                         RichEditor::make('description')
                             ->default(null)

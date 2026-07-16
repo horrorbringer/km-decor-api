@@ -19,10 +19,6 @@ class WishlistResource extends JsonResource
             ];
         }
 
-        $primaryImage = $product->relationLoaded('images')
-            ? $product->images->firstWhere('is_primary', true) ?? $product->images->first()
-            : null;
-
         return [
             'id' => $this->id,
             'saved_at' => $this->created_at,
@@ -45,7 +41,7 @@ class WishlistResource extends JsonResource
                     $product->allow_backorder => 'preorder',
                     default => 'out_of_stock',
                 },
-                'image_url' => $primaryImage?->image_url,
+                'image_url' => $product->primaryImageUrl(),
                 'url' => "/products/{$product->slug}",
             ],
         ];

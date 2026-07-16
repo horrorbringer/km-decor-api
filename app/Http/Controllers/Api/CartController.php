@@ -69,7 +69,7 @@ class CartController extends Controller
         $cart = Cart::firstOrCreate(['user_id' => $request->user()->id]);
         $cart->wasRecentlyCreated = false;
 
-        return $cart->load(['items.product.brand', 'items.product.images']);
+        return $cart->load(['items.product.brand', 'items.product.images', 'items.product.media']);
     }
 
     private function findOwnedItem(Request $request, string $item, bool $lock = false): CartItem

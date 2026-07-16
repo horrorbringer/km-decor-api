@@ -13,6 +13,7 @@ class CategoryController extends Controller
     {
         $categories = Category::query()
             ->where('is_active', true)
+            ->with('media')
             ->withCount(['products' => fn ($query) => $query->published()])
             ->orderBy('sort_order')
             ->orderBy('name')

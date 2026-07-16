@@ -34,7 +34,7 @@ class WishlistController extends Controller
         ]);
         $item->wasRecentlyCreated = false;
 
-        return new WishlistResource($item->load(['product.brand', 'product.category', 'product.images']));
+        return new WishlistResource($item->load(['product.brand', 'product.category', 'product.images', 'product.media']));
     }
 
     public function destroy(Request $request, string $product): AnonymousResourceCollection
@@ -59,7 +59,7 @@ class WishlistController extends Controller
     {
         return $request->user()->wishlistItems()
             ->whereHas('product', fn ($query) => $query->published())
-            ->with(['product.brand', 'product.category', 'product.images'])
+            ->with(['product.brand', 'product.category', 'product.images', 'product.media'])
             ->latest()
             ->get();
     }

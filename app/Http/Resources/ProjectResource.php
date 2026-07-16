@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\RichContent;
+use App\Support\StoredMediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -46,7 +47,7 @@ class ProjectResource extends JsonResource
             'status' => $this->status,
             'meta_title' => $this->when($request->routeIs('portfolio.show'), $this->meta_title),
             'meta_description' => $this->when($request->routeIs('portfolio.show'), $this->meta_description),
-            'og_image' => $this->when($request->routeIs('portfolio.show'), $this->og_image ? asset("storage/{$this->og_image}") : null),
+            'og_image' => $this->when($request->routeIs('portfolio.show'), StoredMediaUrl::from($this->og_image)),
             'structured_data' => $this->when($request->routeIs('portfolio.show'), $this->structured_data ?? []),
         ];
     }

@@ -16,7 +16,7 @@ class ServiceController extends Controller
 
         $services = Service::query()
             ->where('is_active', true)
-            ->with('category')
+            ->with(['category', 'media'])
             ->when(array_key_exists('featured', $validated), fn ($query) => $query->where('is_featured', $validated['featured']))
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -29,6 +29,6 @@ class ServiceController extends Controller
     {
         abort_unless($service->is_active, 404);
 
-        return new ServiceResource($service->load('category'));
+        return new ServiceResource($service->load(['category', 'media']));
     }
 }

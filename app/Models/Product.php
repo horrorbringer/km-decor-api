@@ -8,14 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Spatie\Image\Enums\Fit;
 
 class Product extends Model implements HasMedia
 {
-    use HasUuids, SoftDeletes, InteractsWithMedia;
+    use HasUuids, InteractsWithMedia, SoftDeletes;
 
     protected $fillable = [
         'category_id', 'brand_id', 'name', 'name_kh', 'slug', 'sku',
@@ -82,6 +82,19 @@ class Product extends Model implements HasMedia
     public function wishlistItems(): HasMany
     {
         return $this->hasMany(Wishlist::class);
+    }
+
+    public function primaryImageUrl(): ?string
+    {
+        $mediaUrl = $this->getFirstMediaUrl('images');
+
+        if ($mediaUrl !== '') {
+            return $mediaUrl;
+        }
+
+        $images = $this->relationLoaded('images') ? $this->images : $this->images()->get();
+
+        return ($images->firstWhere('is_primary', true) ?? $images->first())?->image_url;
     }
 
     public function registerMediaCollections(): void

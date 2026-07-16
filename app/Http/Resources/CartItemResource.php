@@ -21,10 +21,6 @@ class CartItemResource extends JsonResource
             ];
         }
 
-        $primaryImage = $product->relationLoaded('images')
-            ? $product->images->firstWhere('is_primary', true) ?? $product->images->first()
-            : null;
-
         return [
             'id' => $this->id,
             'product_id' => $product->id,
@@ -33,7 +29,7 @@ class CartItemResource extends JsonResource
             'sku' => $product->sku,
             'brand' => $product->relationLoaded('brand') ? $product->brand?->name : null,
             'unit' => $product->unit,
-            'image_url' => $primaryImage?->image_url,
+            'image_url' => $product->primaryImageUrl(),
             'quantity' => $this->quantity,
             'unit_price' => (float) $this->unit_price,
             'line_total' => round((float) $this->unit_price * $this->quantity, 2),

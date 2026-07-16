@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Spatie\Image\Enums\Fit;
 
 class Category extends Model implements HasMedia
 {
@@ -48,6 +48,11 @@ class Category extends Model implements HasMedia
     public function services(): HasMany
     {
         return $this->hasMany(Service::class);
+    }
+
+    public function effectiveImageUrl(): ?string
+    {
+        return $this->image_url ?: ($this->getFirstMediaUrl('image') ?: null);
     }
 
     public function registerMediaCollections(): void

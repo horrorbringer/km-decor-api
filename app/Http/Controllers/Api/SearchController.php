@@ -21,7 +21,7 @@ class SearchController extends Controller
 
         $products = Product::query()
             ->published()
-            ->with(['brand:id,name,slug', 'category:id,name,slug', 'images'])
+            ->with(['brand:id,name,slug', 'category:id,name,slug', 'images', 'media'])
             ->where(function (Builder $builder) use ($term) {
                 $builder->where('name', 'like', $term)
                     ->orWhere('name_kh', 'like', $term)
@@ -45,7 +45,7 @@ class SearchController extends Controller
                 'currency' => $product->currency,
                 'brand' => $product->brand?->name,
                 'category' => $product->category?->name,
-                'image_url' => ($product->images->firstWhere('is_primary', true) ?? $product->images->first())?->image_url,
+                'image_url' => $product->primaryImageUrl(),
                 'url' => "/products/{$product->slug}",
             ]);
 
@@ -60,6 +60,7 @@ class SearchController extends Controller
             ->orderByDesc('is_featured')
             ->orderBy('sort_order')
             ->limit($limit)
+            ->with('media')
             ->get()
             ->map(fn (Service $service) => [
                 'id' => $service->id,
@@ -68,7 +69,7 @@ class SearchController extends Controller
                 'name_kh' => $service->name_kh,
                 'slug' => $service->slug,
                 'description' => $service->short_description,
-                'image_url' => $service->image_url,
+                'image_url' => $service->image_url ?: $service->getFirstMediaUrl('images'),
                 'url' => "/services/{$service->slug}",
             ]);
 
@@ -82,6 +83,7 @@ class SearchController extends Controller
             ->orderByDesc('is_featured')
             ->orderBy('sort_order')
             ->limit($limit)
+            ->with('media')
             ->get()
             ->map(fn (Category $category) => [
                 'id' => $category->id,
@@ -90,7 +92,7 @@ class SearchController extends Controller
                 'name_kh' => $category->name_kh,
                 'slug' => $category->slug,
                 'category_type' => $category->type,
-                'image_url' => $category->image_url,
+                'image_url' => $category->effectiveImageUrl(),
                 'url' => $category->type === 'service'
                     ? "/services?category={$category->slug}"
                     : "/products?category={$category->slug}",
@@ -107,6 +109,7 @@ class SearchController extends Controller
             ->orderByDesc('is_featured')
             ->orderBy('sort_order')
             ->limit($limit)
+            ->with('media')
             ->get()
             ->map(fn (Brand $brand) => [
                 'id' => $brand->id,
@@ -114,7 +117,7 @@ class SearchController extends Controller
                 'name' => $brand->name,
                 'name_kh' => $brand->name_kh,
                 'slug' => $brand->slug,
-                'logo_url' => $brand->logo_url,
+                'logo_url' => $brand->logo_url ?: $brand->getFirstMediaUrl('logo'),
                 'url' => "/products?brand={$brand->slug}",
             ]);
 
