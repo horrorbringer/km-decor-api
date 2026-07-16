@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Widgets\LowStockWidget;
+use App\Filament\Widgets\HomepageReadinessWidget;
 use App\Filament\Widgets\OrdersChart;
 use App\Filament\Widgets\SalesChart;
 use App\Filament\Widgets\TopProductsChart;
@@ -71,6 +72,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
+                HomepageReadinessWidget::class,
                 SalesChart::class,
                 OrdersChart::class,
                 TopProductsChart::class,

@@ -79,6 +79,12 @@ class ServicesTable
                         true => 'Active',
                         false => 'Inactive',
                     ]),
+                SelectFilter::make('is_featured')
+                    ->label('Featured')
+                    ->options([
+                        true => 'Featured',
+                        false => 'Not featured',
+                    ]),
                 SelectFilter::make('inquiry_type')
                     ->options([
                         'quote' => 'Quote',

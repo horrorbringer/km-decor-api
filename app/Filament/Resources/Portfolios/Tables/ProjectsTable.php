@@ -78,6 +78,12 @@ class ProjectsTable
                         'draft' => 'Draft',
                         'published' => 'Published',
                     ]),
+                SelectFilter::make('is_featured')
+                    ->label('Featured')
+                    ->options([
+                        true => 'Featured',
+                        false => 'Not featured',
+                    ]),
             ])
             ->defaultSort('sort_order')
             ->paginated([10, 25, 50, 100])

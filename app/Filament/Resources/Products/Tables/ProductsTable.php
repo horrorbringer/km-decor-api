@@ -140,6 +140,12 @@ class ProductsTable
                         'published' => 'Published',
                         'archived' => 'Archived',
                     ]),
+                SelectFilter::make('is_featured')
+                    ->label('Featured')
+                    ->options([
+                        true => 'Featured',
+                        false => 'Not featured',
+                    ]),
                 TrashedFilter::make(),
             ])
             ->defaultSort('created_at', 'desc')
