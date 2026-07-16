@@ -7,6 +7,7 @@ use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
@@ -89,8 +90,9 @@ class ServiceForm
 
                 Section::make('Media')
                     ->schema([
-                        FileUpload::make('images')
+                        SpatieMediaLibraryFileUpload::make('images')
                             ->label('Service Images')
+                            ->collection('images')
                             ->multiple()
                             ->image()
                             ->imageEditor()
@@ -99,16 +101,13 @@ class ServiceForm
                                 '4:3',
                                 '1:1',
                             ])
-                            ->directory('services')
-                            ->visibility('public')
                             ->maxFiles(5)
                             ->reorderable(),
-                        FileUpload::make('portfolio')
+                        SpatieMediaLibraryFileUpload::make('portfolio')
                             ->label('Portfolio Images')
+                            ->collection('portfolio')
                             ->multiple()
                             ->image()
-                            ->directory('services/portfolio')
-                            ->visibility('public')
                             ->maxFiles(20)
                             ->reorderable(),
                     ]),

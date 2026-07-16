@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\Brands\Schemas;
 
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
@@ -45,12 +46,11 @@ class BrandForm
 
                 Section::make('Logo & Description')
                     ->schema([
-                        FileUpload::make('logo')
+                        SpatieMediaLibraryFileUpload::make('logo')
                             ->label('Brand Logo')
+                            ->collection('logo')
                             ->image()
                             ->imageEditor()
-                            ->directory('brands')
-                            ->visibility('public')
                             ->maxFiles(1),
                         RichEditor::make('description')
                             ->default(null)

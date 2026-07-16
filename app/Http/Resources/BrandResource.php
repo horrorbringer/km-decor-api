@@ -15,7 +15,7 @@ class BrandResource extends JsonResource
             'name_kh' => $this->name_kh,
             'slug' => $this->slug,
             'description' => $this->description,
-            'logo_url' => $this->logo_url,
+            'logo_url' => $this->logo_url ?: $this->getFirstMediaUrl('logo'),
             'website_url' => $this->website_url,
             'country_of_origin' => $this->country_of_origin,
             'is_featured' => $this->is_featured,

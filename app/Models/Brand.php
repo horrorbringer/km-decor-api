@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\Image\Enums\Fit;
 
 class Brand extends Model implements HasMedia
 {
@@ -42,7 +43,7 @@ class Brand extends Model implements HasMedia
                 $this->addMediaConversion('thumb')
                     ->width(120)
                     ->height(120)
-                    ->fit('crop');
+                    ->fit(Fit::Crop);
             });
     }
 }
