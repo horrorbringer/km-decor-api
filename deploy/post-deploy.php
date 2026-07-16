@@ -5,6 +5,7 @@
  * Triggered by GitHub Actions after FTP upload completes.
  * Handles all server-side tasks that require PHP CLI:
  *   - Run database migrations
+ *   - Optionally run database seeders when requested by GitHub Actions
  *   - Clear & rebuild caches
  *   - Ensure storage directories exist with correct permissions
  *   - Create storage symlink (if missing)
@@ -42,6 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $body    = file_get_contents('php://input');
 $payload = json_decode($body, true);
+if (! is_array($payload)) {
+    $payload = [];
+}
 $secret  = $payload['secret'] ?? ($_POST['secret'] ?? '');
 
 // Read DEPLOY_SECRET from the server's .env
@@ -160,6 +164,11 @@ $artisan = "{$phpBin} artisan";
 step('Maintenance ON',   "{$artisan} down --secret=deploy-bypass",              $laravelRoot);
 step('Migrate',          "{$artisan} migrate --force --no-interaction",          $laravelRoot);
 step('Settings migrate', "{$artisan} settings:migrate --force --no-interaction", $laravelRoot, required: false);
+
+if (($payload['seed'] ?? false) === true) {
+    step('Seed database', "{$artisan} db:seed --force --no-interaction", $laravelRoot);
+}
+
 step('Config clear',     "{$artisan} config:clear",                              $laravelRoot);
 step('Route clear',      "{$artisan} route:clear",                               $laravelRoot);
 step('View clear',       "{$artisan} view:clear",                                $laravelRoot);

@@ -150,6 +150,25 @@ On the very first deploy:
 
 Subsequent deploys only upload changed files — typically 2–5 minutes.
 
+### 7. Seed data without SSH or cPanel Terminal
+
+If the host disables SSH and Terminal, use GitHub Actions:
+
+1. Go to **GitHub → Actions → Deploy to cPanel (FTP)**
+2. Click **Run workflow**
+3. Enable **Run database seeders after migration**
+4. Click **Run workflow**
+
+This sends `"seed": true` to the authenticated post-deploy script, which runs:
+
+```bash
+php artisan db:seed --force --no-interaction
+```
+
+Do not enable this checkbox for every deploy unless you intentionally want to
+refresh seeded catalog/admin data. The seeders use `updateOrCreate` for core
+data, but production content should still be treated carefully.
+
 ---
 
 ## File reference

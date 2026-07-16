@@ -5,6 +5,12 @@ on:
     branches:
       - main          # trigger on push to main
   workflow_dispatch:  # allow manual trigger from GitHub UI
+    inputs:
+      seed_database:
+        description: 'Run database seeders after migration'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   deploy:
@@ -91,11 +97,19 @@ jobs:
       #   The PHP script on the server runs migrations and rebuilds caches.
       #   It authenticates using DEPLOY_SECRET stored in the server's .env.
       - name: Run post-deploy script
+        env:
+          SEED_DATABASE: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_database }}
         run: |
+          if [ "$SEED_DATABASE" = "true" ]; then
+            PAYLOAD="{\"secret\": \"${{ secrets.DEPLOY_SECRET }}\", \"seed\": true}"
+          else
+            PAYLOAD="{\"secret\": \"${{ secrets.DEPLOY_SECRET }}\"}"
+          fi
+
           RESPONSE=$(curl -s -o /tmp/post_deploy_out.txt -w "%{http_code}" \
             -X POST \
             -H "Content-Type: application/json" \
-            -d "{\"secret\": \"${{ secrets.DEPLOY_SECRET }}\"}" \
+            -d "$PAYLOAD" \
             "${{ secrets.APP_URL }}/deploy/post-deploy.php")
 
           echo "--- Post-deploy response (HTTP $RESPONSE) ---"
