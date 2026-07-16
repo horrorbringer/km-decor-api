@@ -86,6 +86,12 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
+        $user->forceFill([
+            'role' => 'super_admin',
+            'is_active' => true,
+            'email_verified_at' => $user->email_verified_at ?? now(),
+        ])->save();
+
         $user->assignRole('super_admin');
     }
 }
