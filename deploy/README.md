@@ -126,21 +126,18 @@ Laravel must serve from `public/`, not the project root.
 
 ### 5. Make post-deploy.php reachable
 
-`deploy/post-deploy.php` lives above `public/` so Apache cannot serve it directly.
-Add this route in `routes/web.php` to expose it:
+The workflow calls:
 
-```php
-// routes/web.php
-Route::post('/deploy/post-deploy.php', function () {
-    ob_start();
-    include base_path('deploy/post-deploy.php');
-    $output = ob_get_clean();
-    return response($output)
-        ->header('Content-Type', 'application/json');
-})->withoutMiddleware('*');
+```text
+POST https://yourapi.com/deploy/post-deploy.php
 ```
 
-This is safe because the script validates `DEPLOY_SECRET` before doing anything.
+The real script lives at `deploy/post-deploy.php`, above `public/`. The committed
+`public/deploy/post-deploy.php` file is a tiny proxy that includes the real script,
+so the URL works even when Laravel routes are cached.
+
+This is safe because the real script validates `DEPLOY_SECRET` before doing
+anything.
 
 ---
 
