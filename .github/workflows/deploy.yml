@@ -106,11 +106,28 @@ jobs:
             PAYLOAD="{\"secret\": \"${{ secrets.DEPLOY_SECRET }}\"}"
           fi
 
+          POST_DEPLOY_URL="${{ secrets.APP_URL }}/deploy/post-deploy.php"
+
           RESPONSE=$(curl -s -o /tmp/post_deploy_out.txt -w "%{http_code}" \
             -X POST \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD" \
-            "${{ secrets.APP_URL }}/deploy/post-deploy.php")
+            "$POST_DEPLOY_URL")
+
+          if [ "$RESPONSE" = "409" ] && grep -q 'document.cookie = "humans_' /tmp/post_deploy_out.txt; then
+            HUMAN_COOKIE=$(sed -n 's/.*document\.cookie = "\([^"]*\)".*/\1/p' /tmp/post_deploy_out.txt | head -n 1)
+
+            if [ -n "$HUMAN_COOKIE" ]; then
+              echo "Hosting human-check cookie received; retrying post-deploy request."
+
+              RESPONSE=$(curl -s -o /tmp/post_deploy_out.txt -w "%{http_code}" \
+                -X POST \
+                -H "Content-Type: application/json" \
+                -H "Cookie: $HUMAN_COOKIE" \
+                -d "$PAYLOAD" \
+                "$POST_DEPLOY_URL")
+            fi
+          fi
 
           echo "--- Post-deploy response (HTTP $RESPONSE) ---"
           cat /tmp/post_deploy_out.txt
