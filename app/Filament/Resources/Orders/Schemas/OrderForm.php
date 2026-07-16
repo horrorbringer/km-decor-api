@@ -2,14 +2,15 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Models\Order;
 use App\Models\Product;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -22,6 +23,7 @@ class OrderForm
         return $schema
             ->components([
                 Section::make('Customer Information')
+                    ->description('Start with the customer and contact details.')
                     ->columns(2)
                     ->schema([
                         Select::make('user_id')
@@ -30,7 +32,8 @@ class OrderForm
                             ->preload()
                             ->default(null),
                         TextInput::make('order_number')
-                            ->required(),
+                            ->required()
+                            ->default(fn (): string => Order::generateNumber()),
                         TextInput::make('customer_name')
                             ->required(),
                         TextInput::make('customer_phone')
@@ -42,7 +45,10 @@ class OrderForm
                     ]),
 
                 Section::make('Delivery Details')
+                    ->description('Optional delivery preferences can be completed when they are known.')
                     ->columns(2)
+                    ->collapsible()
+                    ->collapsed()
                     ->schema([
                         Select::make('delivery_method')
                             ->options([
@@ -75,6 +81,7 @@ class OrderForm
                     ]),
 
                 Section::make('Financial')
+                    ->description('Totals update automatically from ordered items and the delivery fee.')
                     ->columns(2)
                     ->schema([
                         TextInput::make('subtotal')
@@ -98,7 +105,7 @@ class OrderForm
                     ]),
 
                 Section::make('Ordered Items')
-                    ->description('Select a product to fill the item details, then adjust quantity or pricing if needed.')
+                    ->description('Select products to fill item details, then adjust quantity or pricing if needed.')
                     ->schema([
                         Repeater::make('items')
                             ->relationship()
@@ -189,7 +196,10 @@ class OrderForm
                     ]),
 
                 Section::make('Status & Tracking')
+                    ->description('Operational tracking fields. Defaults are suitable for a new order.')
                     ->columns(2)
+                    ->collapsible()
+                    ->collapsed()
                     ->schema([
                         Select::make('status')
                             ->options([
@@ -215,7 +225,8 @@ class OrderForm
                             ->required()
                             ->default('unpaid'),
                         DateTimePicker::make('ordered_at')
-                            ->required(),
+                            ->required()
+                            ->default(now()),
                         DateTimePicker::make('confirmed_at'),
                         DateTimePicker::make('shipped_at'),
                         DateTimePicker::make('completed_at'),
@@ -223,6 +234,9 @@ class OrderForm
                     ]),
 
                 Section::make('Notes')
+                    ->description('Optional customer and internal notes.')
+                    ->collapsible()
+                    ->collapsed()
                     ->schema([
                         Textarea::make('notes')
                             ->default(null)

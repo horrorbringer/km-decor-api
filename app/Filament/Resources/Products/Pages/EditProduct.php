@@ -22,4 +22,13 @@ class EditProduct extends EditRecord
             RestoreAction::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        if (($data['status'] ?? $this->record->status) === 'published' && blank($data['published_at'] ?? $this->record->published_at)) {
+            $data['published_at'] = now();
+        }
+
+        return $data;
+    }
 }

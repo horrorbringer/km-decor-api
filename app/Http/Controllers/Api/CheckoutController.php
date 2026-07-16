@@ -10,7 +10,6 @@ use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
@@ -39,7 +38,7 @@ class CheckoutController extends Controller
 
             $order = Order::create([
                 'user_id' => $user?->id,
-                'order_number' => $this->orderNumber(),
+                'order_number' => Order::generateNumber(),
                 'customer_name' => $request->validated('name'),
                 'customer_phone' => $request->validated('phone'),
                 'customer_email' => $request->validated('email'),
@@ -116,10 +115,5 @@ class CheckoutController extends Controller
                 'total_price' => round($unitPrice * $quantity, 2),
             ];
         });
-    }
-
-    private function orderNumber(): string
-    {
-        return 'KMD-'.now()->format('Ymd').'-'.Str::upper(Str::random(8));
     }
 }

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 
 class Order extends Model
@@ -69,6 +70,11 @@ class Order extends Model
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class);
+    }
+
+    public static function generateNumber(): string
+    {
+        return 'KMD-'.now()->format('Ymd').'-'.Str::upper(Str::random(8));
     }
 
     protected static function booted(): void

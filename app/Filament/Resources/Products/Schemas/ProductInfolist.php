@@ -42,6 +42,7 @@ class ProductInfolist
                     ]),
 
                 Section::make('Description')
+                    ->columnSpanFull()
                     ->schema([
                         TextEntry::make('short_description'),
                         TextEntry::make('short_description_kh')

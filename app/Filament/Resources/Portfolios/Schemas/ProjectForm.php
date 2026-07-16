@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Portfolios\Schemas;
 
+use App\Support\AdminSeo;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
@@ -10,14 +11,14 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
 
@@ -28,6 +29,7 @@ class ProjectForm
         return $schema
             ->components([
                 Section::make('Basic Information')
+                    ->description('Save the title and publishing state first. New projects stay as drafts until they are ready.')
                     ->columns(2)
                     ->schema([
                         TextInput::make('title')
@@ -38,11 +40,11 @@ class ProjectForm
                                     return;
                                 }
 
-                                if (filled($get('slug')) && $get('slug') !== Str::slug($old ?? '')) {
-                                    return;
+                                if (blank($get('slug')) || $get('slug') === Str::slug($old ?? '')) {
+                                    $set('slug', Str::slug($state));
                                 }
 
-                                $set('slug', Str::slug($state));
+                                AdminSeo::syncTitle($get, $set, $old, $state, 'CreativeWork');
                             }),
                         TextInput::make('title_kh')
                             ->default(null),
@@ -78,6 +80,9 @@ class ProjectForm
                     ]),
 
                 Section::make('Content')
+                    ->description('Build the full case study when the project details are available.')
+                    ->collapsible()
+                    ->collapsed()
                     ->schema([
                         RichEditor::make('goal')
                             ->label('Design goal')
@@ -93,6 +98,8 @@ class ProjectForm
                             ]),
                         RichEditor::make('overview')
                             ->default(null)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn (Get $get, Set $set, ?string $old, ?string $state) => AdminSeo::syncDescription($get, $set, $old, $state, 'CreativeWork'))
                             ->columnSpanFull()
                             ->toolbarButtons([
                                 ['bold', 'italic', 'underline', 'strike', 'link'],
@@ -168,6 +175,9 @@ class ProjectForm
                     ]),
 
                 Section::make('Relations')
+                    ->description('Connect services and products after the project draft exists.')
+                    ->collapsible()
+                    ->collapsed()
                     ->columns(2)
                     ->schema([
                         Select::make('services')
@@ -181,6 +191,7 @@ class ProjectForm
                     ]),
 
                 Section::make('Media')
+                    ->description('Upload the cover image first, followed by supporting gallery images.')
                     ->schema([
                         SpatieMediaLibraryFileUpload::make('gallery')
                             ->label('Gallery Images')
@@ -199,6 +210,9 @@ class ProjectForm
                     ]),
 
                 Section::make('SEO & Metadata')
+                    ->description('Optional advanced metadata for search and social sharing.')
+                    ->collapsible()
+                    ->collapsed()
                     ->schema([
                         Tabs::make('SEO')
                             ->tabs([
@@ -207,12 +221,12 @@ class ProjectForm
                                         TextInput::make('meta_title')
                                             ->label('Meta Title')
                                             ->maxLength(60)
-                                            ->helperText('Max 60 characters for Google'),
+                                            ->helperText('Generated from the project title until you customize it.'),
                                         Textarea::make('meta_description')
                                             ->label('Meta Description')
                                             ->rows(3)
                                             ->maxLength(160)
-                                            ->helperText('Max 160 characters for Google'),
+                                            ->helperText('Generated from the project overview until you customize it.'),
                                         FileUpload::make('og_image')
                                             ->label('Open Graph Image')
                                             ->image()
@@ -225,6 +239,7 @@ class ProjectForm
                                     ->schema([
                                         KeyValue::make('structured_data')
                                             ->label('JSON-LD Structured Data')
+                                            ->helperText('Schema type, name, and description update automatically. Custom keys are preserved.')
                                             ->keyLabel('Key')
                                             ->valueLabel('Value')
                                             ->addActionLabel('Add Property')
