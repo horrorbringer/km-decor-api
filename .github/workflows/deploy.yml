@@ -141,3 +141,34 @@ jobs:
             echo "::error::Post-deploy script did not return DEPLOY_OK"
             exit 1
           fi
+
+      - name: Verify public API health
+        run: |
+          HEALTH_URL="${{ secrets.APP_URL }}/api/health"
+
+          RESPONSE=$(curl -s -o /tmp/api_health_out.txt -w "%{http_code}" "$HEALTH_URL")
+
+          if [ "$RESPONSE" = "409" ] && grep -q 'document.cookie = "humans_' /tmp/api_health_out.txt; then
+            HUMAN_COOKIE=$(sed -n 's/.*document\.cookie = "\([^"]*\)".*/\1/p' /tmp/api_health_out.txt | head -n 1)
+
+            if [ -n "$HUMAN_COOKIE" ]; then
+              echo "Hosting human-check cookie received; retrying API health request."
+
+              RESPONSE=$(curl -s -o /tmp/api_health_out.txt -w "%{http_code}" \
+                -H "Cookie: $HUMAN_COOKIE" \
+                "$HEALTH_URL")
+            fi
+          fi
+
+          echo "--- API health response (HTTP $RESPONSE) ---"
+          cat /tmp/api_health_out.txt
+
+          if [ "$RESPONSE" != "200" ]; then
+            echo "::error::API health endpoint returned HTTP $RESPONSE"
+            exit 1
+          fi
+
+          if ! grep -q '"status":"ok"' /tmp/api_health_out.txt && ! grep -q '"status": "ok"' /tmp/api_health_out.txt; then
+            echo "::error::API health endpoint did not return status ok"
+            exit 1
+          fi
