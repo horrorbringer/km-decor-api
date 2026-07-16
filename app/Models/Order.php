@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Notification;
+use Spatie\Permission\Models\Permission;
 
 class Order extends Model
 {
@@ -84,7 +85,12 @@ class Order extends Model
                     }
                 }
 
-                $users = User::permission('view_orders')->get();
+                $users = Permission::query()
+                    ->where('name', 'view_orders')
+                    ->where('guard_name', 'web')
+                    ->exists()
+                    ? User::permission('view_orders')->get()
+                    : collect();
 
                 Notification::send($users, new OrderStatusChanged(
                     order: $order,
