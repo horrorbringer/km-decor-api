@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -28,6 +29,34 @@ class Product extends Model implements HasMedia
         'is_best_seller', 'sort_order', 'status', 'published_at',
         'meta_title', 'meta_description', 'og_image', 'structured_data',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Product $product): void {
+            if (blank($product->sku)) {
+                $product->sku = static::generateSku($product->name);
+            }
+        });
+    }
+
+    public static function generateSku(?string $name = null): string
+    {
+        $prefix = Str::of($name ?? '')
+            ->ascii()
+            ->upper()
+            ->replaceMatches('/[^A-Z0-9]/', '')
+            ->substr(0, 3)
+            ->padRight(3, 'X')
+            ->value();
+
+        $prefix = $prefix !== 'XXX' ? $prefix : 'KMD';
+
+        do {
+            $sku = $prefix.'-'.Str::upper(Str::random(8));
+        } while (static::withTrashed()->where('sku', $sku)->exists());
+
+        return $sku;
+    }
 
     protected function casts(): array
     {

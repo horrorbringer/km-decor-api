@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use App\Support\AdminSeo;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
@@ -60,7 +59,10 @@ class ProductForm
                             ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? Str::slug($state) : null),
                         TextInput::make('sku')
                             ->label('SKU')
-                            ->required(),
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('Generated automatically when saved')
+                            ->helperText('The SKU is generated once and remains unchanged.'),
                         TextInput::make('short_description')
                             ->required()
                             ->live(onBlur: true)
@@ -188,19 +190,11 @@ class ProductForm
                     ]),
 
                 Section::make('Merchandising & publishing')
-                    ->description('Optional badges, ordering, and publication controls. New records remain drafts by default.')
+                    ->description('Optional badges, ordering, and publication controls. Rating metrics are system-managed, and the publication time is set automatically when the product is published.')
                     ->columns(3)
                     ->collapsible()
                     ->collapsed()
                     ->schema([
-                        TextInput::make('avg_rating')
-                            ->required()
-                            ->numeric()
-                            ->default(0.0),
-                        TextInput::make('review_count')
-                            ->required()
-                            ->numeric()
-                            ->default(0),
                         Toggle::make('is_featured')
                             ->required()
                             ->default(false),
@@ -223,7 +217,6 @@ class ProductForm
                             ->native(false)
                             ->required()
                             ->default('draft'),
-                        DateTimePicker::make('published_at'),
                     ]),
 
                 Section::make('Product images')
