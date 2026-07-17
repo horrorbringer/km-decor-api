@@ -16,7 +16,8 @@ git push main
   │   uses: SamKirkland/FTP-Deploy-Action
   │
   └─ POST https://yourapi.com/deploy/post-deploy.php
-       ├─ Authenticate with DEPLOY_SECRET (read from server's .env)
+       ├─ Verify timestamped HMAC signature using DEPLOY_SECRET
+       ├─ Reject replayed or overlapping deployment requests
        ├─ php artisan down
        ├─ php artisan migrate --force
        ├─ php artisan config:cache / route:cache / view:cache
@@ -88,7 +89,7 @@ DEPLOY_SECRET=your_long_random_secret_here
 
 Go to **GitHub repo → Settings → Secrets and variables → Actions → New repository secret**.
 
-Only these 6 secrets are needed — everything else lives in the server's `.env`:
+Only these seven secrets are needed — everything else lives in the server's `.env`:
 
 | Secret | Example | Description |
 |--------|---------|-------------|
@@ -136,8 +137,9 @@ The real script lives at `deploy/post-deploy.php`, above `public/`. The committe
 `public/deploy/post-deploy.php` file is a tiny proxy that includes the real script,
 so the URL works even when Laravel routes are cached.
 
-This is safe because the real script validates `DEPLOY_SECRET` before doing
-anything.
+The endpoint never receives the raw deployment secret. GitHub signs the exact
+request body with HMAC-SHA256; the server rejects invalid signatures,
+timestamps older than five minutes, reused nonces, and overlapping deployments.
 
 ---
 
@@ -168,6 +170,37 @@ php artisan db:seed --force --no-interaction
 Do not enable this checkbox for every deploy unless you intentionally want to
 refresh seeded catalog/admin data. The seeders use `updateOrCreate` for core
 data, but production content should still be treated carefully.
+
+### 8. Configure cPanel Cron Jobs
+
+The application uses the database queue, so cPanel must invoke the scheduler
+and drain queued jobs. In **cPanel → Cron Jobs**, add both commands with a
+one-minute frequency. Replace `cpanelusername` and the application directory
+with the real server paths.
+
+```cron
+* * * * * cd /home/cpanelusername/public_html/api && /usr/local/bin/ea-php83 artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /home/cpanelusername/public_html/api && /usr/local/bin/ea-php83 artisan queue:work database --stop-when-empty --tries=3 --timeout=50 --max-time=50 >> /dev/null 2>&1
+```
+
+Why the worker exits deliberately:
+
+- Shared hosting should not keep a permanent daemon alive.
+- `--stop-when-empty` lets each Cron invocation drain available jobs and exit.
+- `--max-time=50` prevents one invocation from overlapping the next minute.
+- `--tries=3` moves repeatedly failing jobs to the `failed_jobs` table.
+
+The scheduler automatically removes failed-job records older than seven days.
+Verify the setup from GitHub Actions deployment logs or temporarily remove the
+output redirect and inspect the Cron email/output. Keep this server setting:
+
+```dotenv
+QUEUE_CONNECTION=database
+```
+
+For instant browser events, use an external broadcaster such as Pusher or Ably.
+Cron-backed queues are suitable for emails, notifications, media conversions,
+and near-realtime work, but they do not host a permanent Reverb WebSocket server.
 
 ---
 

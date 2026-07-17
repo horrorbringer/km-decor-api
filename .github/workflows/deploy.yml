@@ -12,6 +12,10 @@ on:
         default: false
         type: boolean
 
+concurrency:
+  group: km-decor-production-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Build & Deploy via FTP
@@ -99,18 +103,26 @@ jobs:
       - name: Run post-deploy script
         env:
           SEED_DATABASE: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_database }}
+          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
         run: |
           if [ "$SEED_DATABASE" = "true" ]; then
-            PAYLOAD="{\"secret\": \"${{ secrets.DEPLOY_SECRET }}\", \"seed\": true}"
+            PAYLOAD="{\"seed\":true,\"commit\":\"${{ github.sha }}\"}"
           else
-            PAYLOAD="{\"secret\": \"${{ secrets.DEPLOY_SECRET }}\"}"
+            PAYLOAD="{\"seed\":false,\"commit\":\"${{ github.sha }}\"}"
           fi
 
           POST_DEPLOY_URL="${{ secrets.APP_URL }}/deploy/post-deploy.php"
+          DEPLOY_TIMESTAMP=$(date +%s)
+          DEPLOY_NONCE=$(openssl rand -hex 16)
+          export DEPLOY_TIMESTAMP DEPLOY_NONCE PAYLOAD
+          DEPLOY_SIGNATURE=$(php -r 'echo hash_hmac("sha256", getenv("DEPLOY_TIMESTAMP")."\n".getenv("DEPLOY_NONCE")."\n".getenv("PAYLOAD"), getenv("DEPLOY_SECRET"));')
 
           RESPONSE=$(curl -s -o /tmp/post_deploy_out.txt -w "%{http_code}" \
             -X POST \
             -H "Content-Type: application/json" \
+            -H "X-Deploy-Timestamp: $DEPLOY_TIMESTAMP" \
+            -H "X-Deploy-Nonce: $DEPLOY_NONCE" \
+            -H "X-Deploy-Signature: $DEPLOY_SIGNATURE" \
             -d "$PAYLOAD" \
             "$POST_DEPLOY_URL")
 
@@ -124,6 +136,9 @@ jobs:
                 -X POST \
                 -H "Content-Type: application/json" \
                 -H "Cookie: $HUMAN_COOKIE" \
+                -H "X-Deploy-Timestamp: $DEPLOY_TIMESTAMP" \
+                -H "X-Deploy-Nonce: $DEPLOY_NONCE" \
+                -H "X-Deploy-Signature: $DEPLOY_SIGNATURE" \
                 -d "$PAYLOAD" \
                 "$POST_DEPLOY_URL")
             fi

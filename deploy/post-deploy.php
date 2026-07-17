@@ -15,7 +15,9 @@
  * production values. This script only reads DEPLOY_SECRET from it to authenticate.
  *
  * SECURITY:
- *   - Only accepts POST requests with a valid DEPLOY_SECRET
+ *   - Only accepts signed POST requests using DEPLOY_SECRET
+ *   - Rejects stale timestamps and replayed nonces
+ *   - Uses an exclusive lock so deployments cannot overlap
  *   - DEPLOY_SECRET must be set in the server's .env file
  *   - This file lives in /deploy/ which is outside /public/
  *     See deploy/README.md for how to make it reachable via HTTP.
@@ -41,12 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit(1);
 }
 
-$body    = file_get_contents('php://input');
+$body    = file_get_contents('php://input') ?: '';
 $payload = json_decode($body, true);
 if (! is_array($payload)) {
     $payload = [];
 }
-$secret  = $payload['secret'] ?? ($_POST['secret'] ?? '');
 
 // Read DEPLOY_SECRET from the server's .env
 $expectedSecret = '';
@@ -65,9 +66,54 @@ foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line)
     }
 }
 
-if ($expectedSecret === '' || !hash_equals($expectedSecret, $secret)) {
+if ($expectedSecret === '') {
+    http_response_code(500);
+    echo json_encode(['error' => 'DEPLOY_SECRET is not configured']);
+    exit(1);
+}
+
+$timestamp = $_SERVER['HTTP_X_DEPLOY_TIMESTAMP'] ?? '';
+$nonce = $_SERVER['HTTP_X_DEPLOY_NONCE'] ?? '';
+$signature = $_SERVER['HTTP_X_DEPLOY_SIGNATURE'] ?? '';
+$timestampValue = ctype_digit($timestamp) ? (int) $timestamp : 0;
+$expectedSignature = hash_hmac('sha256', $timestamp."\n".$nonce."\n".$body, $expectedSecret);
+
+if (
+    $timestampValue === 0
+    || abs(time() - $timestampValue) > 300
+    || ! preg_match('/^[a-f0-9]{32}$/', $nonce)
+    || ! preg_match('/^[a-f0-9]{64}$/', $signature)
+    || ! hash_equals($expectedSignature, $signature)
+) {
     http_response_code(403);
     echo json_encode(['error' => 'Unauthorized']);
+    exit(1);
+}
+
+$nonceDirectory = $laravelRoot.'/storage/framework/deploy-nonces';
+if (! is_dir($nonceDirectory)) {
+    mkdir($nonceDirectory, 0755, true);
+}
+
+foreach (glob($nonceDirectory.'/*') ?: [] as $nonceFile) {
+    if (is_file($nonceFile) && filemtime($nonceFile) < time() - 600) {
+        @unlink($nonceFile);
+    }
+}
+
+$nonceFile = $nonceDirectory.'/'.$nonce;
+$nonceHandle = @fopen($nonceFile, 'x');
+if ($nonceHandle === false) {
+    http_response_code(409);
+    echo json_encode(['error' => 'Deployment request already used']);
+    exit(1);
+}
+fclose($nonceHandle);
+
+$lockHandle = fopen($laravelRoot.'/storage/framework/deploy.lock', 'c');
+if ($lockHandle === false || ! flock($lockHandle, LOCK_EX | LOCK_NB)) {
+    http_response_code(423);
+    echo json_encode(['error' => 'Another deployment is already running']);
     exit(1);
 }
 
@@ -88,7 +134,7 @@ function run(string $command, string $cwd): array
     ];
 }
 
-function step(string $name, string $command, string $cwd, bool $required = true): void
+function step(string $name, string $command, string $cwd, bool $required = true): bool
 {
     global $log, $error;
     $result = run($command, $cwd);
@@ -97,6 +143,8 @@ function step(string $name, string $command, string $cwd, bool $required = true)
     if (!$result['ok'] && $required) {
         $error = true;
     }
+
+    return $result['ok'];
 }
 
 // ── Step 1: Ensure storage directories exist ───────────────────────────────
@@ -161,7 +209,14 @@ $log[] = "[✓] PHP CLI: {$phpBin}";
 
 $artisan = "{$phpBin} artisan";
 
-step('Maintenance ON',   "{$artisan} down --secret=deploy-bypass",              $laravelRoot);
+$maintenanceEnabled = false;
+register_shutdown_function(function () use (&$maintenanceEnabled, $artisan, $laravelRoot): void {
+    if ($maintenanceEnabled) {
+        run("{$artisan} up", $laravelRoot);
+    }
+});
+
+$maintenanceEnabled = step('Maintenance ON', "{$artisan} down --secret=deploy-bypass", $laravelRoot);
 step('Migrate',          "{$artisan} migrate --force --no-interaction",          $laravelRoot);
 step('Settings discover', "{$artisan} settings:discover --no-interaction",       $laravelRoot, required: false);
 step('Settings cache clear', "{$artisan} settings:clear-cache --no-interaction", $laravelRoot, required: false);
@@ -180,7 +235,9 @@ step('View cache',       "{$artisan} view:cache",                               
 step('Storage link',     "{$artisan} storage:link --force",                      $laravelRoot, required: false);
 step('Filament upgrade', "{$artisan} filament:upgrade",                          $laravelRoot, required: false);
 step('Queue restart',    "{$artisan} queue:restart",                             $laravelRoot, required: false);
-step('Maintenance OFF',  "{$artisan} up",                                        $laravelRoot);
+if (step('Maintenance OFF', "{$artisan} up", $laravelRoot)) {
+    $maintenanceEnabled = false;
+}
 
 // ── Respond ────────────────────────────────────────────────────────────────
 
@@ -188,10 +245,18 @@ respondAndExit($log, $error);
 
 function respondAndExit(array $log, bool $error): never
 {
+    global $lockHandle, $payload;
+
+    if (is_resource($lockHandle)) {
+        flock($lockHandle, LOCK_UN);
+        fclose($lockHandle);
+    }
+
     http_response_code($error ? 500 : 200);
     header('Content-Type: application/json');
     echo json_encode([
         'status' => $error ? 'error' : 'DEPLOY_OK',
+        'commit' => $payload['commit'] ?? null,
         'log'    => $log,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     exit($error ? 1 : 0);
